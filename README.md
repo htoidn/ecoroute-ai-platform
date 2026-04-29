@@ -86,9 +86,9 @@ python app.py
 
 ## 🌿 Branching Strategy
 - main → Production-ready code
-- development → Integration branch
-- feature/* → Feature development
-- bugfix/* → Bug fixes
+- develop → Integration branch
+- feat/* → Feature development
+- fix/* → Bug fixes
 
 ---
 

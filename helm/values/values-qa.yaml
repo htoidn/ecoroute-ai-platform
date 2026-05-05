@@ -1,0 +1,6 @@
+environment: qa
+
+backend:
+  replicas: 2
+
+logLevel: INFO

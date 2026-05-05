@@ -1,0 +1,121 @@
+# ================================
+# OS FILES
+# ================================
+.DS_Store
+*.log
+
+# ================================
+# INTELLIJ / IDE
+# ================================
+ Covers JetBrains IDEs: IntelliJ, RubyMine, PhpStorm, AppCode, PyCharm, CLion, Android Studio, WebStorm and Rider
+# Reference: https://intellij-support.jetbrains.com/hc/en-us/articles/206544839
+
+# User-specific stuff
+.idea/**/workspace.xml
+.idea/**/tasks.xml
+.idea/**/usage.statistics.xml
+.idea/**/dictionaries
+.idea/**/shelf
+
+.idea/*
+*.iml
+modules.xml
+.idea/misc.xml
+*.iws
+*.ipr
+out/
+target/
+build/
+
+# ================================
+# JAVA / SPRING BOOT
+# ================================
+*.class
+*.jar
+*.war
+*.nar
+*.ear
+*.zip
+*.tar.gz
+*.rar
+
+# Spring Boot logs
+logs/
+
+
+# ================================
+# Gradle
+# ================================
+.gradle/
+**/build/
+!src/**/build/
+!gradle-wrapper.jar
+!gradle-wrapper.properties
+
+
+# ================================
+# REACT / FRONTEND
+# ================================
+frontend/node_modules/
+frontend/dist/
+frontend/build/
+
+# Vite cache
+frontend/.vite/
+
+# npm / yarn
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+
+# environment variables
+frontend/.env
+frontend/.env.local
+frontend/.env.production
+
+# ================================
+# PYTHON AI SERVICE
+# ================================
+ai-service/__pycache__/
+ai-service/*.pyc
+ai-service/*.pyo
+ai-service/.env
+ai-service/venv/
+ai-service/env/
+ai-service/.pytest_cache/
+
+# Jupyter
+.ipynb_checkpoints/
+
+# ================================
+# POSTGRES / DATABASE LOCAL FILES
+# ================================
+*.sqlite
+*.db
+postgres-data/
+
+# ================================
+# DOCKER
+# ================================
+docker-compose.override.yml
+.docker/
+
+# ================================
+# HELM / K8S
+# ================================
+helm/**/charts/
+helm/**/tmp/
+*.tgz
+
+# ================================
+# ENV FILES
+# ================================
+.env
+.env.*
+
+# ================================
+# LOGS / TEMP FILES
+# ================================
+*.tmp
+*.swp
+*.bak

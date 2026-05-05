@@ -1,0 +1,6 @@
+environment: dev
+
+backend:
+  replicas: 1
+
+logLevel: DEBUG

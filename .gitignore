@@ -93,6 +93,7 @@ ai-service/.pytest_cache/
 *.sqlite
 *.db
 postgres-data/
+DATABASE_SETUP.md
 
 # ================================
 # DOCKER

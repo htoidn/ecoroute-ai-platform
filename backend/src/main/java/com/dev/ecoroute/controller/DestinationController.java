@@ -15,11 +15,11 @@ public class DestinationController {
 
     private final DestinationService service;
 
-    // CREATE
+/*    // CREATE
     @PostMapping
     public Destination create(@RequestBody Destination destination) {
         return service.createDestination(destination);
-    }
+    }*/
 
     // READ ALL
     @GetMapping
@@ -31,5 +31,15 @@ public class DestinationController {
     @GetMapping("/{id}")
     public Destination getById(@PathVariable Long id) {
         return service.getById(id);
+    }
+
+    @GetMapping("/eco")
+    public List<Destination> eco() {
+        return service.getEcoRecommendations();
+    }
+
+    @GetMapping("/tag")
+    public List<Destination> tag(@RequestParam String tag) {
+        return service.searchByTag(tag);
     }
 }

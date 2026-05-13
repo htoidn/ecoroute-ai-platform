@@ -1,0 +1,13 @@
+environment: prod
+
+backend:
+  image: ecoroute/backend
+  tag: latest
+
+frontend:
+  image: ecoroute/frontend
+  tag: latest
+
+aiService:
+  image: ecoroute/ai-service
+  tag: latest

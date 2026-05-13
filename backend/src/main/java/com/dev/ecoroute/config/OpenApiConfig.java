@@ -13,6 +13,6 @@ public class OpenApiConfig {
                 .info(new Info()
                         .title("EcoRoute API")
                         .version("1.0")
-                        .description("EcoRoute API for project"));
+                        .description("EcoRoute API Documentation"));
     }
 }

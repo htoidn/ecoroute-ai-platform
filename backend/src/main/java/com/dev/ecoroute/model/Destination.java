@@ -1,5 +1,6 @@
 package com.dev.ecoroute.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -7,6 +8,7 @@ import lombok.Data;
 import lombok.NoArgsConstructor;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Entity
 @Table(name = "destinations")
@@ -51,4 +53,13 @@ public class Destination {
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    // Relationships with other entities(e.g., reviews, itineraries)
+    @OneToMany(mappedBy = "destination")
+    @JsonIgnore
+    private List<Review> reviews;
+
+    @OneToMany(mappedBy = "destination")
+    @JsonIgnore
+    private List<Recommendation> recommendations;
 }

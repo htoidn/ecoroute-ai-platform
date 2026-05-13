@@ -1,4 +1,5 @@
 import { PanelMenu } from 'primereact/panelmenu';
+import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 
 const SidebarContainer = styled.div`
@@ -87,26 +88,33 @@ const StyledPanelMenu = styled(PanelMenu)`
 `;
 
 export default function Sidebar() {
+    const navigate = useNavigate();
+
     const items = [
         {
             label: 'Dashboard',
             icon: 'pi pi-home',
-            command: () => window.location.hash = '#/'
+            command: () => navigate('/')
         },
         {
             label: 'Explore',
             icon: 'pi pi-map',
-            command: () => window.location.hash = '#/explore'
+            command: () => navigate('/explore')
+        },
+        {
+            label: 'Add User',
+            icon: 'pi pi-user-plus',
+            command: () => navigate('/add-user')
         },
         {
             label: 'Recommendations',
             icon: 'pi pi-star',
-            command: () => window.location.hash = '#/recommendations'
+            command: () => navigate('/recommendations')
         },
         {
             label: 'Settings',
             icon: 'pi pi-cog',
-            command: () => window.location.hash = '#/settings'
+            command: () => navigate('/settings')
         }
     ];
 

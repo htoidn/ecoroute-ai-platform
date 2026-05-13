@@ -41,3 +41,104 @@ VALUES
     ('Bamberg','Germany',93,65,50,90,85,10,'Spring','unesco,walkable,eco','UNESCO heritage eco city'),
     ('Lübeck','Germany',92,67,55,95,83,10,'Summer','unesco,coastal,history','Historic coastal UNESCO city'),
     ('Schwerin','Germany',90,55,40,85,80,9,'Summer','castle,quiet,green','Quiet city with castle and lakes');
+
+-- User data
+INSERT INTO users
+(username, email, password, role, preferred_budget, preferred_climate)
+VALUES
+    ('alex','alice@mail.com','$2a$10$hash','USER',70,'cool'),
+    ('byan','bob@mail.com','$2a$10$hash','USER',60,'warm'),
+    ('cherry','charlie@mail.com','$2a$10$hash','USER',80,'mild'),
+    ('denis','diana@mail.com','$2a$10$hash','USER',50,'cool'),
+    ('eric','eric@mail.com','$2a$10$hash','USER',90,'warm'),
+    ('fiona','fiona@mail.com','$2a$10$hash','USER',55,'cold'),
+    ('george','george@mail.com','$2a$10$hash','USER',65,'mild'),
+    ('hannah','hannah@mail.com','$2a$10$hash','USER',70,'warm'),
+    ('ivan','ivan@mail.com','$2a$10$hash','USER',45,'cold'),
+    ('julia','julia@mail.com','$2a$10$hash','USER',75,'mild'),
+    ('kevin','kevin@mail.com','$2a$10$hash','USER',60,'warm'),
+    ('laura','laura@mail.com','$2a$10$hash','USER',68,'cool'),
+    ('mike','mike@mail.com','$2a$10$hash','USER',72,'warm'),
+    ('nina','nina@mail.com','$2a$10$hash','USER',58,'mild'),
+    ('oliver','oliver@mail.com','$2a$10$hash','USER',82,'cool'),
+    ('pauline','paula@mail.com','$2a$10$hash','USER',49,'cold'),
+    ('querin','quentin@mail.com','$2a$10$hash','USER',65,'warm'),
+    ('richard','rachel@mail.com','$2a$10$hash','USER',78,'mild'),
+    ('sam','sam@mail.com','$2a$10$hash','USER',53,'cool'),
+    ('tina','tina@mail.com','$2a$10$hash','USER',67,'warm');
+
+-- User preferences
+INSERT INTO user_preferences
+(user_id, prefers_low_co2, prefers_public_transport,
+ prefers_quiet_places, preferred_tags)
+VALUES
+    (1,true,true,true,'eco,cycling'),
+    (2,true,false,false,'urban,nightlife'),
+    (3,true,true,false,'culture,architecture'),
+    (4,true,true,true,'quiet,nature'),
+    (5,false,true,false,'luxury,shopping'),
+    (6,true,true,true,'cold,nature'),
+    (7,true,false,false,'food,urban'),
+    (8,true,true,false,'cycling,green'),
+    (9,true,true,true,'calm,eco'),
+    (10,true,false,false,'culture,history'),
+    (11,true,true,false,'modern,urban'),
+    (12,true,true,true,'walkable,quiet'),
+    (13,false,false,false,'luxury,resort'),
+    (14,true,true,true,'eco,student'),
+    (15,true,true,false,'mountains,green'),
+    (16,true,true,true,'nature,lakes'),
+    (17,true,false,false,'beach,summer'),
+    (18,true,true,false,'historic,walkable'),
+    (19,true,true,true,'solar,eco'),
+    (20,true,false,false,'shopping,city');
+
+-- Recommendations
+INSERT INTO recommendations
+(user_id, destination_id, ai_score, reason)
+VALUES
+    (1,14,96,'High sustainability and cycling'),
+    (2,1,88,'Urban lifestyle match'),
+    (3,9,92,'Historic eco destination'),
+    (4,10,95,'Quiet and low crowd'),
+    (5,3,80,'Luxury travel match'),
+    (6,15,93,'Nature and cold climate'),
+    (7,5,84,'Modern urban fit'),
+    (8,18,97,'Top cycling city'),
+    (9,16,94,'Quiet eco atmosphere'),
+    (10,8,89,'Affordable creative city'),
+    (11,4,86,'Historic urban vibe'),
+    (12,12,91,'Relaxed green environment'),
+    (13,3,79,'Luxury clean city'),
+    (14,14,98,'Strong eco score'),
+    (15,20,90,'Scenic sustainable location'),
+    (16,17,87,'Nature and calmness'),
+    (17,2,82,'Coastal city experience'),
+    (18,19,93,'Green smart city'),
+    (19,14,99,'Best sustainability score'),
+    (20,5,85,'Modern transportation');
+
+-- Favorites
+INSERT INTO favorites
+(user_id, destination_id)
+VALUES
+    (1,14),
+    (2,1),
+    (3,9),
+    (4,10),
+    (5,3),
+    (6,15),
+    (7,5),
+    (8,18),
+    (9,16),
+    (10,8),
+    (11,4),
+    (12,12),
+    (13,3),
+    (14,14),
+    (15,20),
+    (16,17),
+    (17,2),
+    (18,19),
+    (19,14),
+    (20,5);

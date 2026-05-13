@@ -1,0 +1,62 @@
+version: '3.9'
+
+services:
+
+  postgres:
+    image: postgres:15
+
+    container_name: ecoroute-postgres
+
+    environment:
+      POSTGRES_DB: ecoroute
+      POSTGRES_USER: ecoroute_user
+      POSTGRES_PASSWORD: ecoroute123
+
+    ports:
+      - "5432:5432"
+
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  backend:
+    build:
+      context: ./backend
+
+    container_name: ecoroute-backend
+
+    ports:
+      - "8080:8080"
+
+    depends_on:
+      - postgres
+      - ai-service
+
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ecoroute
+      POSTGRES_USER: ecoroute_hdnh
+      POSTGRES_PASSWORD: eco7ro1ute
+      AI_SERVICE_URL: http://ai-service:8000
+
+  frontend:
+    build:
+      context: ./frontend
+
+    container_name: ecoroute-frontend
+
+    ports:
+      - "3000:80"
+
+    depends_on:
+      - backend
+
+  ai-service:
+    build:
+      context: ./ai-service
+
+    container_name: ecoroute-ai-service
+
+    ports:
+      - "8000:8000"
+
+volumes:
+  postgres_data:

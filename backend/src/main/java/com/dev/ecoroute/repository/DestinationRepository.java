@@ -25,4 +25,5 @@ public interface DestinationRepository extends JpaRepository<Destination, Long> 
                 WHERE tags ILIKE %:tag%
             """, nativeQuery = true)
     List<Destination> findByTag(@Param("tag") String tag);
+
 }

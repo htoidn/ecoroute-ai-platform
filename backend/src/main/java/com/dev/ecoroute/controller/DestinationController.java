@@ -15,11 +15,11 @@ public class DestinationController {
 
     private final DestinationService service;
 
-/*    // CREATE
+    // CREATE
     @PostMapping
     public Destination create(@RequestBody Destination destination) {
         return service.createDestination(destination);
-    }*/
+    }
 
     // READ ALL
     @GetMapping

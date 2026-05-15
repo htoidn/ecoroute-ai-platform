@@ -3,20 +3,20 @@ version: '3.9'
 services:
 
   postgres:
-    image: postgres:15
+    image: postgres:18
 
     container_name: ecoroute-postgres
 
     environment:
       POSTGRES_DB: ecoroute
-      POSTGRES_USER: ecoroute_user
-      POSTGRES_PASSWORD: ecoroute123
+      POSTGRES_USER: ecoroute_hdnh
+      POSTGRES_PASSWORD: eco7ro1ute
 
     ports:
       - "5432:5432"
 
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
 
   backend:
     build:
@@ -58,5 +58,25 @@ services:
     ports:
       - "8000:8000"
 
+  pgadmin:
+    image: dpage/pgadmin4:latest
+
+    container_name: ecoroute-pgadmin
+
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@localhost.com
+      PGADMIN_DEFAULT_PASSWORD: admin123
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+
+    ports:
+      - "5050:80"
+
+    depends_on:
+      - postgres
+
+    volumes:
+      - pgadmin_data:/var/lib/pgadmin
+
 volumes:
   postgres_data:
+  pgadmin_data:

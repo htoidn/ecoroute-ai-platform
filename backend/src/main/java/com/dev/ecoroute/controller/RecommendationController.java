@@ -1,5 +1,6 @@
 package com.dev.ecoroute.controller;
 
+import com.dev.ecoroute.dto.RecommendationRequest;
 import com.dev.ecoroute.model.Recommendation;
 import com.dev.ecoroute.service.RecommendationService;
 import lombok.RequiredArgsConstructor;
@@ -25,9 +26,10 @@ public class RecommendationController {
 
     @PostMapping
     public Recommendation create(
-            @RequestBody Recommendation recommendation
+            @RequestBody RecommendationRequest request
     ) {
-        return service.createRecommendation(recommendation);
+
+        return service.createRecommendation(request);
     }
 
     @PostMapping("/recommend")

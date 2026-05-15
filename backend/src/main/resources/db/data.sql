@@ -142,3 +142,13 @@ VALUES
     (18,19),
     (19,14),
     (20,5);
+
+-- App User data for authentication
+INSERT INTO app_user
+(email, username, password, preferences, role, active, created_at)
+VALUES
+    ('alice@example.com','alice','$2a$10$hash','eco-friendly destinations','USER',true,CURRENT_TIMESTAMP),
+    ('bob@example.com','bob','$2a$10$hash','urban adventures','USER',true,CURRENT_TIMESTAMP),
+    ('charlie@example.com','charlie','$2a$10$hash','cultural experiences','USER',true,CURRENT_TIMESTAMP),
+    ('diana@example.com','diana','$2a$10$hash','nature and quiet places','USER',true,CURRENT_TIMESTAMP),
+    ('eric@example.com','eric','$2a$10$hash','luxury travel','USER',true,CURRENT_TIMESTAMP);

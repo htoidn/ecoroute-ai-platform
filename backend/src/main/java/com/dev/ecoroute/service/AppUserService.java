@@ -33,6 +33,7 @@ public class AppUserService {
     public AppUser updateUser(Long id, AppUser updatedUser) {
         AppUser user = getUserById(id);
 
+        user.setEmail(updatedUser.getEmail());
         user.setUsername(updatedUser.getUsername());
         user.setPassword(updatedUser.getPassword());
         user.setRole(updatedUser.getRole());

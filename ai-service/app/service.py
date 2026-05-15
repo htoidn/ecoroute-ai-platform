@@ -1,25 +1,49 @@
-from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-
-vectorizer = TfidfVectorizer()
+from model import vectorizer
 
 
 def recommend(request):
-    descriptions = [d.description for d in request.destinations]
+
+    descriptions = []
+
+    for destination in request.destinations:
+
+        description = destination.description
+
+        if description is None:
+            description = ""
+
+        descriptions.append(description)
+
     descriptions.append(request.user_input)
 
-    tfidf = vectorizer.fit_transform(descriptions)
+    tfidf_matrix = vectorizer.fit_transform(descriptions)
 
-    scores = cosine_similarity(tfidf[-1], tfidf[:-1])[0]
+    similarity_scores = cosine_similarity(
+        tfidf_matrix[-1],
+        tfidf_matrix[:-1]
+    )[0]
 
     results = []
 
     for i, destination in enumerate(request.destinations):
+
         results.append({
-            'id': destination.id,
-            'name': destination.name,
-            'description': destination.description,
-            'score': float(scores[i])
+            "id": destination.id,
+            "name": destination.name,
+            "description": description,
+            "score": round(float(similarity_scores[i]), 4),
+            "country": getattr(destination, "country", ""),
+            "sustainability_score": getattr(destination, "sustainability_score", 0),
+            "cost_index": getattr(destination, "cost_index", 0),
+            "crowd_index": getattr(destination, "crowd_index", 0),
+            "tags": getattr(destination, "tags", "")
         })
 
-    return sorted(results, key=lambda x: x['score'], reverse=True)
+    results = sorted(
+        results,
+        key=lambda x: x["score"],
+        reverse=True
+    )
+
+    return results

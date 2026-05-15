@@ -17,6 +17,11 @@ public class RecommendationController {
     @Autowired
     private final RecommendationService service;
 
+    @GetMapping
+    public List<Recommendation> getAllRecommendations() {
+        return service.getAllRecommendations();
+    }
+
     @GetMapping("/{userId}")
     public List<Recommendation> recommendations(
             @PathVariable Long userId

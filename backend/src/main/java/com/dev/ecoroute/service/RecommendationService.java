@@ -25,6 +25,10 @@ public class RecommendationService {
 
     private final AIClient aiClient;
 
+    public List<Recommendation> getAllRecommendations() {
+        return repository.findAll();
+    }
+
     public List<Recommendation> getRecommendations(
             Long userId
     ) {

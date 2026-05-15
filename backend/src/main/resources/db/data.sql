@@ -93,30 +93,113 @@ VALUES
     (19,true,true,true,'solar,eco'),
     (20,true,false,false,'shopping,city');
 
--- Recommendations
+-- Recommendations with AI Analysis - Diverse User and Destination Combinations
 INSERT INTO recommendations
 (user_id, destination_id, ai_score, reason)
 VALUES
-    (1,14,96,'High sustainability and cycling'),
-    (2,1,88,'Urban lifestyle match'),
-    (3,9,92,'Historic eco destination'),
-    (4,10,95,'Quiet and low crowd'),
-    (5,3,80,'Luxury travel match'),
-    (6,15,93,'Nature and cold climate'),
-    (7,5,84,'Modern urban fit'),
-    (8,18,97,'Top cycling city'),
-    (9,16,94,'Quiet eco atmosphere'),
-    (10,8,89,'Affordable creative city'),
-    (11,4,86,'Historic urban vibe'),
-    (12,12,91,'Relaxed green environment'),
-    (13,3,79,'Luxury clean city'),
-    (14,14,98,'Strong eco score'),
-    (15,20,90,'Scenic sustainable location'),
-    (16,17,87,'Nature and calmness'),
-    (17,2,82,'Coastal city experience'),
-    (18,19,93,'Green smart city'),
-    (19,14,99,'Best sustainability score'),
-    (20,5,85,'Modern transportation');
+    -- User 1: Eco-conscious, low CO2, public transport lover
+    (1,14,96,'Excellent sustainability score (95); Outstanding public transportation network'),
+    (1,18,95,'Top cycling infrastructure; Low carbon footprint travel'),
+    (1,22,94,'Strong eco-friendly profile matches interests; Excellent for cycling'),
+    (1,40,92,'Perfect for cycling and walking; Outstanding public transportation'),
+    (1,17,90,'Great for travelers seeking value and sustainability; Excellent for cycling'),
+
+    -- User 2: Urban lifestyle, nightlife enthusiast
+    (2,1,88,'Urban lifestyle match; Outstanding public transportation network'),
+    (2,5,86,'Modern urban fit; Financial hub with vibrant culture'),
+    (2,3,85,'Luxury clean city; Great urban experience'),
+
+    -- User 3: Culture and history enthusiast
+    (3,9,92,'Rich cultural and historic heritage; Perfect for cultural enthusiasts'),
+    (3,41,91,'UNESCO heritage city beautifully designed'),
+    (3,39,89,'Beautiful historic film city atmosphere'),
+    (3,8,88,'Affordable creative city with rich history'),
+
+    -- User 4: Quiet nature lover, low crowds
+    (4,10,95,'Quiet destination with fewer crowds; Outstanding nature access'),
+    (4,32,93,'Quiet coastal eco-friendly city'),
+    (4,27,91,'Scenic riverside quiet town'),
+
+    -- User 5: Luxury traveler, high budget
+    (5,3,80,'Luxury travel and high quality of life'),
+    (5,6,82,'Automotive hub with luxury facilities'),
+    (5,5,81,'Modern financial hub with luxury services'),
+
+    -- User 6: Cold climate, nature enthusiast
+    (6,15,93,'Nature and cold climate; Excellent for eco travelers'),
+    (6,11,91,'Walkable historic eco-friendly city'),
+    (6,37,89,'Quiet coastal eco-friendly destination'),
+
+    -- User 7: Food and urban culture
+    (7,5,84,'Modern urban fit; Finance hub with dining'),
+    (7,4,82,'Historic urban vibe; Great food culture'),
+    (7,25,81,'Wine city with walkable dining areas'),
+
+    -- User 8: Cycling enthusiast, eco-conscious
+    (8,18,97,'Top cycling city; Excellent for cycling and walking'),
+    (8,22,96,'Exceptional cycling infrastructure'),
+    (8,40,94,'Perfect for cycling and walking'),
+    (8,14,92,'High sustainability and cycling'),
+
+    -- User 9: Calm, peaceful, eco-lover
+    (9,16,94,'Quiet eco atmosphere; Outstanding nature access'),
+    (9,33,91,'Historic calm eco-friendly destination'),
+    (9,27,90,'Scenic riverside quiet town'),
+
+    -- User 10: Culture and history buff
+    (10,8,89,'Affordable creative city; Rich cultural heritage'),
+    (10,41,88,'UNESCO heritage eco-friendly city'),
+    (10,33,87,'Historic calm eco-friendly destination'),
+
+    -- User 11: Modern urban seeker
+    (11,4,86,'Historic urban vibe; Modern infrastructure'),
+    (11,5,85,'Modern transportation infrastructure'),
+    (11,1,84,'Urban lifestyle with modern amenities'),
+
+    -- User 12: Walkable, quiet places
+    (12,12,91,'Relaxed green environment; Perfect for peaceful getaway'),
+    (12,34,90,'Top cycling city; Quiet destination'),
+    (12,27,89,'Scenic riverside quiet town'),
+
+    -- User 13: Luxury resort seeker
+    (13,3,79,'Luxury travel with high quality'),
+    (13,6,78,'Luxury automotive city'),
+    (13,5,77,'Modern luxury finance hub'),
+
+    -- User 14: Eco-conscious superuser
+    (14,14,98,'Exceptional eco score; Cycling infrastructure'),
+    (14,18,97,'Top cycling city; Green infrastructure'),
+    (14,22,96,'Strong eco-friendly profile'),
+
+    -- User 15: Mountains and green spaces
+    (15,20,90,'Scenic sustainable location; Green spaces'),
+    (15,14,89,'Sustainability and nature access'),
+    (15,15,88,'Romantic green destination'),
+
+    -- User 16: Nature and lakes lover
+    (16,17,87,'Nature and calmness; Quiet destination'),
+    (16,31,86,'Scenic riverside destination'),
+    (16,27,85,'Scenic riverside quiet town'),
+
+    -- User 17: Beach and summer vibes
+    (17,2,82,'Coastal city experience; Harbor charm'),
+    (17,43,81,'Quiet coastal eco-friendly city'),
+    (17,32,80,'Scenic riverside coastal destination'),
+
+    -- User 18: Historic walkable cities
+    (18,19,93,'Green smart city; Historic charm'),
+    (18,41,92,'UNESCO heritage walkable city'),
+    (18,33,90,'Historic calm city'),
+
+    -- User 19: Solar and eco innovations
+    (19,14,99,'Best sustainability and solar score'),
+    (19,18,98,'Top cycling; Exceptional eco credentials'),
+    (19,22,96,'Exception eco-friendly city'),
+
+    -- User 20: Shopping and urban centers
+    (20,5,85,'Modern transportation; Shopping districts'),
+    (20,7,84,'Stylish city with fashion'),
+    (20,4,83,'Historic urban shopping');
 
 -- Favorites
 INSERT INTO favorites
@@ -142,3 +225,13 @@ VALUES
     (18,19),
     (19,14),
     (20,5);
+
+-- App User data for authentication
+INSERT INTO app_user
+(email, username, password, preferences, role, active, created_at)
+VALUES
+    ('alice@example.com','alice','$2a$10$hash','eco-friendly destinations','USER',true,CURRENT_TIMESTAMP),
+    ('bob@example.com','bob','$2a$10$hash','urban adventures','USER',true,CURRENT_TIMESTAMP),
+    ('charlie@example.com','charlie','$2a$10$hash','cultural experiences','USER',true,CURRENT_TIMESTAMP),
+    ('diana@example.com','diana','$2a$10$hash','nature and quiet places','USER',true,CURRENT_TIMESTAMP),
+    ('eric@example.com','eric','$2a$10$hash','luxury travel','USER',true,CURRENT_TIMESTAMP);

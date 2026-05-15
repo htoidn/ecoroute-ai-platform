@@ -169,7 +169,20 @@ const getDestinationIcon = (name: string) => {
   return icons[name] || '🏙️';
 };
 
-export default function DestinationCard({ item }: any) {
+interface DestinationItem {
+  name?: string;
+  description?: string;
+  score?: number;
+  ai_score?: number;
+  sustainability_score?: number;
+  cost_index?: number;
+  crowd_index?: number;
+  country?: string;
+  tags?: string;
+  // Add other properties as needed
+}
+
+export default function DestinationCard({ item }: { item: DestinationItem }) {
     const score = item.score || item.ai_score || 0;
     const sustainabilityScore = item.sustainability_score || 0;
     const costIndex = item.cost_index || 0;
@@ -179,7 +192,7 @@ export default function DestinationCard({ item }: any) {
         <StyledCard>
             <CardHeader>
                 <div style={{ display: 'flex', alignItems: 'center' }}>
-                    <DestinationIcon>{getDestinationIcon(item.name)}</DestinationIcon>
+                    <DestinationIcon>{getDestinationIcon(item.name || '')}</DestinationIcon>
                     <div>
                         <div className="p-card-title">{item.name}</div>
                         <div className="p-card-subtitle">{item.country}</div>

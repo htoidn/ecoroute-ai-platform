@@ -1,5 +1,6 @@
 package com.dev.ecoroute.client;
 
+import com.dev.ecoroute.dto.AIDestinationDTO;
 import com.dev.ecoroute.model.Destination;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.ResponseEntity;
@@ -21,17 +22,31 @@ public class AIClient {
         this.restTemplate = new RestTemplate();
     }
 
-    public Object recommend(String input, List<Destination> destinations) {
+    public Object recommend(
+            String input,
+            List<Destination> destinations
+    ) {
+
+        List<AIDestinationDTO> dtoList = destinations
+                .stream()
+                .map(destination -> new AIDestinationDTO(
+                        destination.getId(),
+                        destination.getName(),
+                        destination.getDescription()
+                ))
+                .toList();
 
         Map<String, Object> request = new HashMap<>();
-        request.put("user_input", input);
-        request.put("destinations", destinations);
 
-        ResponseEntity<Object> response = restTemplate.postForEntity(
-                aiServiceUrl + "/recommend",
-                request,
-                Object.class
-        );
+        request.put("user_input", input);
+        request.put("destinations", dtoList);
+
+        ResponseEntity<Object> response =
+                restTemplate.postForEntity(
+                        aiServiceUrl + "/recommend",
+                        request,
+                        Object.class
+                );
 
         return response.getBody();
     }

@@ -151,7 +151,7 @@ export default function AddUser() {
     { label: 'Hot', value: 'hot' }
   ];
 
-  const handleInputChange = (field: keyof UserFormData, value: any) => {
+  const handleInputChange = (field: keyof UserFormData, value: string | number) => {
     setFormData(prev => ({
       ...prev,
       [field]: value
@@ -186,7 +186,7 @@ export default function AddUser() {
         preferred_budget: 0,
         preferred_climate: ''
       });
-    } catch (err) {
+    } catch {
       setError('Failed to create user. Please try again.');
     } finally {
       setLoading(false);

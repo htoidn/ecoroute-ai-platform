@@ -12,6 +12,9 @@ public class AppUser {
     private Long id;
 
     @Column(nullable = false, unique = true)
+    private String email;
+
+    @Column(nullable = false, unique = true)
     private String username;
 
     @Column(nullable = false)
@@ -33,6 +36,7 @@ public class AppUser {
 
     public AppUser(
             Long id,
+            String email,
             String username,
             String password,
             String preferences,
@@ -41,6 +45,7 @@ public class AppUser {
             LocalDateTime createdAt
     ) {
         this.id = id;
+        this.email = email;
         this.username = username;
         this.password = password;
         this.preferences = preferences;
@@ -55,6 +60,14 @@ public class AppUser {
 
     public void setId(Long id) {
         this.id = id;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getUsername() {

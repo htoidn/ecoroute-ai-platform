@@ -33,17 +33,21 @@ interface Recommendation {
   reason: string;
 }
 
-const HeroSection = styled.div`
+const HeroSection = styled.div<{ backgroundIndex: number }>`
   text-align: center;
   padding: 4rem 2rem;
   margin-bottom: 3rem;
-  background: linear-gradient(135deg, rgba(72, 187, 120, 0.9), rgba(56, 161, 105, 0.9)), url('https://source.unsplash.com/random/1920x1080/?travel,nature,eco');
+  background: linear-gradient(135deg, rgba(72, 187, 120, 0.8), rgba(56, 161, 105, 0.8));
+  background-image: 
+    linear-gradient(135deg, rgba(72, 187, 120, 0.8), rgba(56, 161, 105, 0.8)),
+    url('https://picsum.photos/1920/1080?random=${props => props.backgroundIndex + 1001}');
   background-size: cover;
   background-position: center;
   border-radius: 20px;
   color: white;
   position: relative;
   overflow: hidden;
+  transition: background-image 0.8s ease-in-out;
 
   &::before {
     content: '';
@@ -214,9 +218,19 @@ export default function Home() {
   const [topDestinations, setTopDestinations] = useState<Destination[]>([]);
   const [featuredRecommendations, setFeaturedRecommendations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [backgroundIndex, setBackgroundIndex] = useState(0);
 
   useEffect(() => {
     loadData();
+  }, []);
+
+  // Slideshow background effect
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setBackgroundIndex(prev => (prev + 1) % 5);
+    }, 5000); // Change background every 5 seconds
+
+    return () => clearInterval(interval);
   }, []);
 
   const loadData = async () => {
@@ -233,15 +247,16 @@ export default function Home() {
         .slice(0, 6);
       setTopDestinations(sorted);
 
-      // Get top recommendations
+      // Get top 8 recommendations with varied destinations and users
       const topRecs = recsResponse.data
         .sort((a: Recommendation, b: Recommendation) => b.aiScore - a.aiScore)
-        .slice(0, 6)
-        .map((rec: Recommendation) => {
+        .slice(0, 8)
+        .map((rec: Recommendation, index: number) => {
           const dest = destsResponse.data.find((d: Destination) => d.id === rec.destinationId);
           return {
             ...rec,
             destination: dest,
+            imageId: 2000 + index, // Unique image ID for each card
           };
         });
       setFeaturedRecommendations(topRecs);
@@ -271,7 +286,7 @@ export default function Home() {
 
   return (
     <PageContainer theme={theme}>
-      <HeroSection>
+      <HeroSection backgroundIndex={backgroundIndex}>
         <h1>🌍 Smart Sustainable Tourism</h1>
         <p>
           Discover eco-friendly destinations tailored to your preferences. Find the perfect balance between
@@ -300,12 +315,12 @@ export default function Home() {
             {featuredRecommendations.map(rec => (
               <DestinationCard key={rec.id} theme={theme}>
                 <CardImage
-                  src={`https://picsum.photos/400/300?random=${rec.destination?.id}`}
+                  src={`https://picsum.photos/400/300?random=${rec.imageId}`}
                   alt={`${rec.destination?.name} image`}
                 />
                 <CardContent>
                   <CardTitle>{rec.destination?.name}</CardTitle>
-                  <CardSubtitle>{rec.destination?.country}</CardSubtitle>
+                  <CardSubtitle>{rec.destination?.country} • User #{rec.userId}</CardSubtitle>
                   <CardDescription>{rec.reason}</CardDescription>
 
                   <div style={{ marginBottom: '1rem' }}>
@@ -317,7 +332,7 @@ export default function Home() {
                     <div>💶 Cost Index: {rec.destination?.costIndex}</div>
                   </ScoreRow>
 
-                  <ActionButton onClick={() => navigate('/explore')} variant="primary">
+                  <ActionButton onClick={() => navigate(`/destination/${rec.destinationId}`)} variant="primary">
                     View Details →
                   </ActionButton>
                 </CardContent>

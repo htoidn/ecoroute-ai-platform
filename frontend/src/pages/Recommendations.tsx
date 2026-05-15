@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { getAllRecommendations, getAllDestinations } from '../services/api';
 import { useTheme } from '../contexts/ThemeContext';
@@ -258,8 +259,31 @@ const StatCard = styled.div`
   }
 `;
 
+const ViewDetailsButton = styled.button`
+  padding: 0.5rem 1rem;
+  background: linear-gradient(135deg, #48bb78, #38a169);
+  color: white;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: all 0.3s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
+  }
+
+  @media (max-width: 768px) {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+  }
+`;
+
 export default function Recommendations() {
   const { theme } = useTheme();
+  const navigate = useNavigate();
   const [activeTab, setActiveTab] = useState<'table' | 'chart'>('table');
   const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
   const [destinations, setDestinations] = useState<Map<number, Destination>>(new Map());
@@ -394,7 +418,7 @@ export default function Recommendations() {
         </Tab>
       </TabContainer>
 
-      {activeTab === 'table' ? (
+       {activeTab === 'table' ? (
         <Table theme={theme}>
           <TableHead>
             <TableRow>
@@ -403,15 +427,16 @@ export default function Recommendations() {
               <TableHeader theme={theme}>User ID</TableHeader>
               <TableHeader theme={theme}>AI Score</TableHeader>
               <TableHeader theme={theme}>Reason</TableHeader>
+              <TableHeader theme={theme}>Action</TableHeader>
             </TableRow>
           </TableHead>
           <tbody>
-            {recommendations.map(rec => {
+            {recommendations.map((rec, index) => {
               const dest = destinations.get(rec.destinationId);
               return (
                 <TableRow key={rec.id} theme={theme}>
                   <ImageCell data-label="Image" theme={theme}>
-                    <img src={`https://picsum.photos/60/40?random=${rec.destinationId}`} alt={dest?.name} />
+                    <img src={`https://picsum.photos/60/40?random=${3000 + index}`} alt={dest?.name} />
                   </ImageCell>
                   <TableCell
                     data-label="Destination"
@@ -428,6 +453,11 @@ export default function Recommendations() {
                   </ScoreCell>
                   <TableCell data-label="Reason" theme={theme}>
                     {rec.reason}
+                  </TableCell>
+                  <TableCell data-label="Action" theme={theme}>
+                    <ViewDetailsButton onClick={() => navigate(`/destination/${rec.destinationId}`)}>
+                      View Details →
+                    </ViewDetailsButton>
                   </TableCell>
                 </TableRow>
               );

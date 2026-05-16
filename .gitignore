@@ -49,8 +49,12 @@ logs/
 .gradle/
 **/build/
 !src/**/build/
-!gradle-wrapper.jar
-!gradle-wrapper.properties
+
+# Keep Gradle wrapper
+!gradlew
+!gradlew.bat
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
 
 
 # ================================
@@ -120,3 +124,10 @@ helm/**/tmp/
 *.tmp
 *.swp
 *.bak
+
+#*.md files
+# Ignore all Markdown files
+*.md
+
+# Except the main README
+!README.md

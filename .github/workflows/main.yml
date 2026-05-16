@@ -1,4 +1,4 @@
-name: EcoRoute AI CI/CD
+name: EcoRoute AI CI/CD Pipeline
 
 on:
   push:
@@ -15,6 +15,10 @@ jobs:
   backend:
     runs-on: ubuntu-latest
 
+    defaults:
+      run:
+        working-directory: ./backend
+
     steps:
 
       - name: Checkout repository
@@ -24,31 +28,35 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: 25
+          java-version: 21
+
+      - name: Grant execute permission
+        run: chmod +x gradlew
 
       - name: Build backend
-        working-directory: backend
         run: ./gradlew clean build
 
   frontend:
     runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: ./frontend
 
     steps:
 
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Setup Node.js
+      - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
       - name: Install frontend dependencies
-        working-directory: frontend
         run: npm install
 
       - name: Build frontend
-        working-directory: frontend
         run: npm run build
 
   ai-service:
@@ -62,12 +70,12 @@ jobs:
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.11'
+          python-version: "3.11"
 
       - name: Install Python dependencies
-        working-directory: ai-service/app
+        working-directory: ./ai-service/app
         run: pip install -r requirements.txt
 
       - name: Validate Python
-        working-directory: ai-service/app
+        working-directory: ./ai-service/app
         run: python -m compileall .

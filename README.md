@@ -18,21 +18,26 @@ EcoRoute AI is a web-based platform designed to provide personalized and sustain
 
 ### Frontend
 - React (TypeScript)
+- Styled Components
+- PrimeReact (UI Library)
+- vite (Build Tool)
+- Axios (API Calls)
 
 ### Backend
 - Spring Boot (Java)
 
 ### AI/ML
 - Python
-- TensorFlow
+- Uvicorn
+- FastAPI
 - Scikit-learn
 
 ### Database
 - PostgreSQL
-- Redis (Caching)
 
 ### DevOps
 - Docker
+- GitHub Actions (CI/CD)
 - Helm
 - Cloud (GCP)
 
@@ -43,13 +48,14 @@ EcoRoute AI is a web-based platform designed to provide personalized and sustain
 - │
 - ├── helm/
 - ├── frontend/
+- ├           /tests/
 - ├── backend/
+- ├          /tests/
 - ├── ai-engine/
 - ├── database/
 - ├── docs/
 - ├── design/
-- ├── docker/
-- ├── tests/
+- ├── docker
 - └── README.md
 
 
@@ -66,21 +72,31 @@ git clone https://github.com/htoidn/ecoroute-ai-platform.git
 ```bash
 cd frontend
 npm install
-npm start
+npm run dev
 ```
+INFO: Vite dev server running at http://localhost:3000
 
 ### 3.  Run Backend
 ```bash
 cd backend
 ./gradle bootRun
 ```
+INFO: Spring Boot app running at http://localhost:8080
+Swagger UI: http://localhost:8080/swagger-ui.html
+Health endpoint: http://localhost:8080/actuator/health
 
 ### 4. Run AI Engine
 ```bash 
-cd ai-engine
+cd ai-engine/app
 pip install -r requirements.txt
-python app.py
+uvicorn main:app --reload 
 ```
+INFO: FastAPI running on http://127.0.0.1:8000 OR http://localhost:8000
+Swagger AI Docs: http://localhost:8000/docs
+Health endpoint: http://localhost:8000/health
+
+### 5. Run Database
+INFO: PostgreSQL running on localhost:5432
 
 ---
 
@@ -88,13 +104,13 @@ python app.py
 - main → Production-ready code
 - develop → Integration branch
 - feat/* → Feature development
-- fix/* → Bug fixes
+- hotfix/* → Bug fixes
 
 ---
 
 ## 📝 Commit Message Format
 - feat: add new feature
-- fix: resolve bug
+- hotfix: resolve bug
 - docs: update documentation
 - refactor: improve code structure
 

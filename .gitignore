@@ -124,3 +124,10 @@ helm/**/tmp/
 *.tmp
 *.swp
 *.bak
+
+#*.md files
+# Ignore all Markdown files
+*.md
+
+# Except the main README
+!README.md

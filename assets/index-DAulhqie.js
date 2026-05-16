@@ -208,155 +208,154 @@ Please change the parent <Route path="${e}"> to <Route path="${e===`/`?`*`:`${e}
 
   ${e=>{switch(e.color){case`blue`:return`background: rgba(102, 126, 234, 0.2); color: #667eea;`;case`purple`:return`background: rgba(159, 122, 234, 0.2); color: #9f7aea;`;case`orange`:return`background: rgba(237, 137, 54, 0.2); color: #ed8936;`;default:return`background: rgba(72, 187, 120, 0.2); color: #48bb78;`}}}
 `,nl=L.div`
-  text-align: center;
-  padding: 4rem 2rem;
-  margin-bottom: 3rem;
-  background: linear-gradient(135deg, rgba(72, 187, 120, 0.8), rgba(56, 161, 105, 0.8));
-  background-image: 
-    linear-gradient(135deg, rgba(72, 187, 120, 0.8), rgba(56, 161, 105, 0.8)),
+    text-align: center;
+    padding: 4rem 2rem;
+    margin-bottom: 3rem;
+    background: linear-gradient(135deg, rgba(72, 187, 120, 0.8), rgba(56, 161, 105, 0.8));
+    background-image: linear-gradient(135deg, rgba(72, 187, 120, 0.8), rgba(56, 161, 105, 0.8)),
     url('https://picsum.photos/1920/1080?random=${e=>e.backgroundIndex+1001}');
-  background-size: cover;
-  background-position: center;
-  border-radius: 20px;
-  color: white;
-  position: relative;
-  overflow: hidden;
-  transition: background-image 0.8s ease-in-out;
-
-  &::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    right: -50%;
-    width: 500px;
-    height: 500px;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
-    border-radius: 50%;
-  }
-
-  &::after {
-    content: '';
-    position: absolute;
-    bottom: -30%;
-    left: -30%;
-    width: 400px;
-    height: 400px;
-    background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
-    border-radius: 50%;
-  }
-
-  h1 {
-    font-size: 3rem;
-    font-weight: 800;
-    margin-bottom: 1rem;
-    line-height: 1.2;
+    background-size: cover;
+    background-position: center;
+    border-radius: 20px;
+    color: white;
     position: relative;
-    z-index: 1;
+    overflow: hidden;
+    transition: background-image 0.8s ease-in-out;
 
-    @media (max-width: 768px) {
-      font-size: 2rem;
+    &::before {
+        content: '';
+        position: absolute;
+        top: -50%;
+        right: -50%;
+        width: 500px;
+        height: 500px;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.1) 0%, transparent 70%);
+        border-radius: 50%;
     }
-  }
 
-  p {
-    font-size: 1.2rem;
-    margin-bottom: 2rem;
-    opacity: 0.95;
-    max-width: 600px;
-    margin-left: auto;
-    margin-right: auto;
-    position: relative;
-    z-index: 1;
-
-    @media (max-width: 768px) {
-      font-size: 1rem;
+    &::after {
+        content: '';
+        position: absolute;
+        bottom: -30%;
+        left: -30%;
+        width: 400px;
+        height: 400px;
+        background: radial-gradient(circle, rgba(255, 255, 255, 0.05) 0%, transparent 70%);
+        border-radius: 50%;
     }
-  }
+
+    h1 {
+        font-size: 3rem;
+        font-weight: 800;
+        margin-bottom: 1rem;
+        line-height: 1.2;
+        position: relative;
+        z-index: 1;
+
+        @media (max-width: 768px) {
+            font-size: 2rem;
+        }
+    }
+
+    p {
+        font-size: 1.2rem;
+        margin-bottom: 2rem;
+        opacity: 0.95;
+        max-width: 600px;
+        margin-left: auto;
+        margin-right: auto;
+        position: relative;
+        z-index: 1;
+
+        @media (max-width: 768px) {
+            font-size: 1rem;
+        }
+    }
 `,rl=L.div`
-  margin-bottom: 4rem;
+    margin-bottom: 4rem;
 `,il=L.h2`
-  font-size: 2rem;
-  font-weight: 800;
-  background: linear-gradient(135deg, #48bb78, #38a169);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
-  margin-bottom: 2rem;
-  display: flex;
-  align-items: center;
-  gap: 1rem;
+    font-size: 2rem;
+    font-weight: 800;
+    background: linear-gradient(135deg, #48bb78, #38a169);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin-bottom: 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
 
-  @media (max-width: 768px) {
-    font-size: 1.5rem;
-  }
+    @media (max-width: 768px) {
+        font-size: 1.5rem;
+    }
 `,al=L.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 2rem;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 2rem;
 
-  @media (max-width: 1024px) {
-    grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  }
+    @media (max-width: 1024px) {
+        grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+    }
 
-  @media (max-width: 768px) {
-    grid-template-columns: 1fr;
-  }
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+    }
 `,ol=L.div`
-  background: ${e=>e.theme.colors.cardBg};
-  border-radius: 16px;
-  overflow: hidden;
-  box-shadow: 0 4px 15px ${e=>e.theme.colors.shadow};
-  transition: all 0.3s ease;
-  border: 1px solid ${e=>e.theme.colors.border};
-  cursor: pointer;
+    background: ${e=>e.theme.colors.cardBg};
+    border-radius: 16px;
+    overflow: hidden;
+    box-shadow: 0 4px 15px ${e=>e.theme.colors.shadow};
+    transition: all 0.3s ease;
+    border: 1px solid ${e=>e.theme.colors.border};
+    cursor: pointer;
 
-  &:hover {
-    transform: translateY(-8px);
-    box-shadow: 0 12px 25px rgba(72, 187, 120, 0.2);
-  }
+    &:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 12px 25px rgba(72, 187, 120, 0.2);
+    }
 `,sl=L.img`
-  width: 100%;
-  height: 200px;
-  object-fit: cover;
-  display: block;
+    width: 100%;
+    height: 200px;
+    object-fit: cover;
+    display: block;
 `,G=L.div`
-  padding: 1.5rem;
+    padding: 1.5rem;
 `,cl=L.h3`
-  font-size: 1.2rem;
-  font-weight: 700;
-  color: ${e=>e.theme.colors.text};
-  margin-bottom: 0.5rem;
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: ${e=>e.theme.colors.text};
+    margin-bottom: 0.5rem;
 `,ll=L.p`
-  font-size: 0.9rem;
-  color: ${e=>e.theme.colors.textSecondary};
-  margin-bottom: 1rem;
-`,ul=L.p`
-  font-size: 0.9rem;
-  color: ${e=>e.theme.colors.textSecondary};
-  margin-bottom: 1rem;
-  line-height: 1.5;
-  min-height: 50px;
-`,dl=L.div`
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 1rem;
-  margin-bottom: 1rem;
-  font-size: 0.85rem;
-  color: ${e=>e.theme.colors.textSecondary};
-`,fl=L(Zc)`
-  width: 100%;
-`,pl=L.div`
-  text-align: center;
-  padding: 3rem 2rem;
-  color: ${e=>e.theme.colors.textSecondary};
-
-  .icon {
-    font-size: 3rem;
+    font-size: 0.9rem;
+    color: ${e=>e.theme.colors.textSecondary};
     margin-bottom: 1rem;
-  }
+`,ul=L.p`
+    font-size: 0.9rem;
+    color: ${e=>e.theme.colors.textSecondary};
+    margin-bottom: 1rem;
+    line-height: 1.5;
+    min-height: 50px;
+`,dl=L.div`
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    font-size: 0.85rem;
+    color: ${e=>e.theme.colors.textSecondary};
+`,fl=L(Zc)`
+    width: 100%;
+`,pl=L.div`
+    text-align: center;
+    padding: 3rem 2rem;
+    color: ${e=>e.theme.colors.textSecondary};
 
-  p {
-    font-size: 1.05rem;
-    margin-bottom: 1.5rem;
-  }
+    .icon {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+    }
+
+    p {
+        font-size: 1.05rem;
+        margin-bottom: 1.5rem;
+    }
 `;function ml(){let{theme:e}=Yc(),t=ft(),[n,r]=(0,S.useState)(``),[i,a]=(0,S.useState)([]),[o,s]=(0,S.useState)([]),[c,l]=(0,S.useState)(!0),[u,d]=(0,S.useState)(0);(0,S.useEffect)(()=>{f()},[]),(0,S.useEffect)(()=>{let e=setInterval(()=>{d(e=>(e+1)%5)},5e3);return()=>clearInterval(e)},[]);let f=async()=>{l(!0);try{let[e,t]=await Promise.all([Gc(),Kc()]);a(e.data.sort((e,t)=>t.sustainabilityScore-e.sustainabilityScore).slice(0,6)),s(t.data.sort((e,t)=>t.aiScore-e.aiScore).slice(0,8).map((t,n)=>{let r=e.data.find(e=>e.id===t.destinationId);return{...t,destination:r,imageId:2e3+n}}))}catch(e){console.error(`Failed to load data:`,e)}finally{l(!1)}},p=()=>{n.trim()&&t(`/explore?search=${encodeURIComponent(n)}`)};return c?(0,W.jsx)(Xc,{theme:e,children:(0,W.jsxs)(Qc,{children:[(0,W.jsx)(`div`,{className:`spinner`}),(0,W.jsx)(`p`,{children:`Loading your eco-friendly adventure...`})]})}):(0,W.jsxs)(Xc,{theme:e,children:[(0,W.jsxs)(nl,{backgroundIndex:u,children:[(0,W.jsx)(`h1`,{children:`🌍 Smart Sustainable Tourism`}),(0,W.jsx)(`p`,{children:`Discover eco-friendly destinations tailored to your preferences. Find the perfect balance between sustainability, cost, and comfort with AI-powered recommendations.`}),(0,W.jsxs)($c,{children:[(0,W.jsx)(el,{type:`text`,placeholder:`Search destinations (e.g., Berlin, eco-friendly, low-cost)...`,value:n,onChange:e=>r(e.target.value),onKeyPress:e=>e.key===`Enter`&&p(),theme:e}),(0,W.jsx)(Zc,{onClick:p,variant:`secondary`,children:`🔍 Search Now`})]})]}),(0,W.jsxs)(rl,{children:[(0,W.jsx)(il,{children:`⭐ AI-Powered Recommendations`}),o.length>0?(0,W.jsx)(al,{children:o.map(n=>(0,W.jsxs)(ol,{theme:e,children:[(0,W.jsx)(sl,{src:`https://picsum.photos/400/300?random=${n.imageId}`,alt:`${n.destination?.name} image`}),(0,W.jsxs)(G,{children:[(0,W.jsx)(cl,{children:n.destination?.name}),(0,W.jsxs)(ll,{children:[n.destination?.country,` • User #`,n.userId]}),(0,W.jsx)(ul,{children:n.reason}),(0,W.jsx)(`div`,{style:{marginBottom:`1rem`},children:(0,W.jsxs)(tl,{color:`green`,children:[`AI Score: `,n.aiScore,`/100`]})}),(0,W.jsxs)(dl,{theme:e,children:[(0,W.jsxs)(`div`,{children:[`♻️ Sustainability: `,n.destination?.sustainabilityScore,`%`]}),(0,W.jsxs)(`div`,{children:[`💶 Cost Index: `,n.destination?.costIndex]})]}),(0,W.jsx)(fl,{onClick:()=>t(`/destination/${n.destinationId}`),variant:`primary`,children:`View Details →`})]})]},n.id))}):(0,W.jsxs)(pl,{theme:e,children:[(0,W.jsx)(`div`,{className:`icon`,children:`🤖`}),(0,W.jsx)(`p`,{children:`No recommendations available yet`}),(0,W.jsx)(Zc,{onClick:()=>t(`/explore`),variant:`secondary`,children:`Explore Destinations`})]})]}),(0,W.jsxs)(rl,{children:[(0,W.jsx)(il,{children:`🌿 Top Eco-Friendly Destinations`}),i.length>0?(0,W.jsx)(al,{children:i.map(n=>(0,W.jsxs)(ol,{theme:e,children:[(0,W.jsx)(sl,{src:`https://picsum.photos/400/300?random=${n.id}`,alt:`${n.name} image`}),(0,W.jsxs)(G,{children:[(0,W.jsx)(cl,{children:n.name}),(0,W.jsx)(ll,{children:n.country}),(0,W.jsx)(ul,{children:n.description}),(0,W.jsx)(`div`,{style:{marginBottom:`1rem`},children:(0,W.jsxs)(tl,{color:`green`,children:[`Sustainability: `,n.sustainabilityScore,`/100`]})}),(0,W.jsxs)(dl,{theme:e,children:[(0,W.jsxs)(`div`,{children:[`🚌 Transport: `,n.publicTransportScore,`%`]}),(0,W.jsxs)(`div`,{children:[`👥 Crowd Index: `,n.crowdIndex]}),(0,W.jsxs)(`div`,{children:[`🍂 Best: `,n.bestSeason]}),(0,W.jsxs)(`div`,{children:[`💶 Cost: `,n.costIndex]})]}),(0,W.jsx)(fl,{onClick:()=>t(`/explore`),variant:`primary`,children:`Explore More →`})]})]},n.id))}):(0,W.jsxs)(pl,{theme:e,children:[(0,W.jsx)(`div`,{className:`icon`,children:`🌍`}),(0,W.jsx)(`p`,{children:`No destinations available yet`})]})]}),(0,W.jsxs)(rl,{children:[(0,W.jsx)(il,{children:`📊 Quick Overview`}),(0,W.jsxs)(al,{children:[(0,W.jsx)(ol,{theme:e,children:(0,W.jsxs)(G,{style:{textAlign:`center`,padding:`2rem`},children:[(0,W.jsx)(`div`,{style:{fontSize:`2.5rem`,fontWeight:800,color:e.colors.primary,marginBottom:`0.5rem`},children:i.length}),(0,W.jsx)(`div`,{style:{color:e.colors.textSecondary},children:`Active Destinations`})]})}),(0,W.jsx)(ol,{theme:e,children:(0,W.jsxs)(G,{style:{textAlign:`center`,padding:`2rem`},children:[(0,W.jsx)(`div`,{style:{fontSize:`2.5rem`,fontWeight:800,color:e.colors.primary,marginBottom:`0.5rem`},children:o.length}),(0,W.jsx)(`div`,{style:{color:e.colors.textSecondary},children:`AI Recommendations`})]})}),(0,W.jsx)(ol,{theme:e,children:(0,W.jsxs)(G,{style:{textAlign:`center`,padding:`2rem`},children:[(0,W.jsx)(`div`,{style:{fontSize:`2.5rem`,fontWeight:800,color:e.colors.primary,marginBottom:`0.5rem`},children:`♻️`}),(0,W.jsx)(`div`,{style:{color:e.colors.textSecondary},children:`100% Eco-Conscious`})]})})]})]})]})}function hl(){return(0,W.jsx)(ml,{})}Kr.createRoot(document.getElementById(`root`)).render((0,W.jsx)(S.StrictMode,{children:(0,W.jsx)(Cn,{children:(0,W.jsx)(hl,{})})}));

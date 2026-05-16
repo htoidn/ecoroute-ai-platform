@@ -3,6 +3,7 @@ import { InputText } from 'primereact/inputtext';
 import { Password } from 'primereact/password';
 import { Button } from 'primereact/button';
 import { Dropdown } from 'primereact/dropdown';
+import type { DropdownChangeEvent } from 'primereact/dropdown';
 import { Card } from 'primereact/card';
 import { Message } from 'primereact/message';
 import styled from 'styled-components';
@@ -209,7 +210,7 @@ export default function AddUser() {
               <InputText
                 id="username"
                 value={formData.username}
-                onChange={(e) => handleInputChange('username', e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('username', e.target.value)}
                 placeholder="Enter username"
                 required
               />
@@ -221,7 +222,7 @@ export default function AddUser() {
                 id="email"
                 type="email"
                 value={formData.email}
-                onChange={(e) => handleInputChange('email', e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('email', e.target.value)}
                 placeholder="Enter email address"
                 required
               />
@@ -232,7 +233,7 @@ export default function AddUser() {
               <Password
                 id="password"
                 value={formData.password}
-                onChange={(e) => handleInputChange('password', e.target.value)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('password', e.target.value)}
                 placeholder="Enter password"
                 toggleMask
                 required
@@ -245,7 +246,7 @@ export default function AddUser() {
                 id="role"
                 value={formData.role}
                 options={roleOptions}
-                onChange={(e) => handleInputChange('role', e.target.value)}
+                onChange={(e: DropdownChangeEvent) => handleInputChange('role', e.target.value)}
                 placeholder="Select role"
               />
             </FormGroup>
@@ -256,7 +257,7 @@ export default function AddUser() {
                 id="budget"
                 type="number"
                 value={formData.preferred_budget.toString()}
-                onChange={(e) => handleInputChange('preferred_budget', parseFloat(e.target.value) || 0)}
+                onChange={(e: React.ChangeEvent<HTMLInputElement>) => handleInputChange('preferred_budget', parseFloat(e.target.value) || 0)}
                 placeholder="Enter preferred budget"
                 min="0"
                 step="0.01"
@@ -269,7 +270,7 @@ export default function AddUser() {
                 id="climate"
                 value={formData.preferred_climate}
                 options={climateOptions}
-                onChange={(e) => handleInputChange('preferred_climate', e.target.value)}
+                onChange={(e: DropdownChangeEvent) => handleInputChange('preferred_climate', e.target.value)}
                 placeholder="Select preferred climate"
               />
             </FormGroup>

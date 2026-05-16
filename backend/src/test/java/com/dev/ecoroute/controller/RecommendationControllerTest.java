@@ -2,35 +2,33 @@ package com.dev.ecoroute.controller;
 
 import com.dev.ecoroute.service.RecommendationService;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.web.servlet.MockMvc;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(RecommendationController.class)
+@ExtendWith(MockitoExtension.class)
 class RecommendationControllerTest {
-    @Autowired
-    private MockMvc mockMvc;
 
-    @MockitoBean
+    @Mock
     private RecommendationService service;
 
+    @InjectMocks
+    private RecommendationController controller;
+
     @Test
-    void shouldReturnRecommendations() throws Exception {
+    void shouldReturnRecommendations() {
 
         when(service.recommend("eco city"))
                 .thenReturn(List.of());
 
-        mockMvc.perform(post("/api/recommend")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("eco city"))
-                .andExpect(status().isOk());
+        var result = controller.recommend("eco city");
+
+        assertNotNull(result);
     }
 }

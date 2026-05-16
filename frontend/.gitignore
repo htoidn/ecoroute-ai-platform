@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+#*.md files
+DATABASE_SETUP.md
+GITHUB_ACTIONS_FIX.md
+GITHUB_PAGES_SETUP.md

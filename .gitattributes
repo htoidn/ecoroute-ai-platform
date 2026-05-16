@@ -1,0 +1,26 @@
+# ---------------------------
+# Backend (Spring Boot)
+# ---------------------------
+backend/src/main/resources/*.sql linguist-detectable=true
+
+# ---------------------------
+# Frontend (React + Vite)
+# ---------------------------
+frontend/dist/* linguist-vendored
+frontend/build/* linguist-vendored
+frontend/node_modules/* linguist-vendored
+
+# If you want to reduce JS dominance:
+*.min.js linguist-vendored
+
+# ---------------------------
+# AI Service (Python)
+# ---------------------------
+ai-service/__pycache__/* linguist-vendored
+ai-service/*.pyc linguist-vendored
+
+# ---------------------------
+# DevOps / Helm (optional weighting fix)
+# ---------------------------
+helm/* linguist-detectable=false
+docker-compose.yml linguist-detectable=false

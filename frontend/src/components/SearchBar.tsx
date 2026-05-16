@@ -75,7 +75,7 @@ interface Props {
 }
 
 export default function SearchBar({ value, onChange, onSearch }: Props) {
-    const handleKeyPress = (e: React.KeyboardEvent) => {
+    const handleKeyPress = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === 'Enter') {
             onSearch();
         }
@@ -87,7 +87,7 @@ export default function SearchBar({ value, onChange, onSearch }: Props) {
                 <div className="p-inputgroup">
                     <InputText
                         value={value}
-                        onChange={(e) => onChange(e.target.value)}
+                        onChange={(e: React.ChangeEvent<HTMLInputElement>) => onChange(e.target.value)}
                         onKeyPress={handleKeyPress}
                         placeholder="Discover eco-friendly destinations..."
                     />

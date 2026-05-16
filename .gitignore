@@ -126,6 +126,8 @@ helm/**/tmp/
 *.bak
 
 #*.md files
-DATABASE_SETUP.md
-GITHUB_ACTIONS_FIX.md
-GITHUB_PAGES_SETUP.md
+# Ignore all Markdown files
+*.md
+
+# Except the main README
+!README.md

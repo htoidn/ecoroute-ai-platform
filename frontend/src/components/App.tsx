@@ -1,22 +1,16 @@
 import Sidebar from '../layout/Sidebar';
 import Home from '../pages/Home';
 
-import {
-    Container,
-    SidebarWrapper,
-    MainContent
-} from '../styles/LayoutStyles';
+import {Container, MainContent, SidebarWrapper} from '../styles/LayoutStyles';
 
 export default function App() {
-    return (
-        <Container>
+    return (<Container>
             <SidebarWrapper>
-                <Sidebar />
+                <Sidebar/>
             </SidebarWrapper>
 
             <MainContent>
-                <Home />
+                <Home/>
             </MainContent>
-        </Container>
-    );
+        </Container>);
 }

@@ -58,7 +58,6 @@ EcoRoute AI is a web-based platform designed to provide personalized and sustain
 - ├── docker
 - └── README.md
 
-
 ---
 
 ## 🔧 Setup Instructions
@@ -81,9 +80,9 @@ INFO: Vite dev server running at http://localhost:3000
 cd backend
 ./gradle bootRun
 ```
-INFO: Spring Boot app running at http://localhost:8080
-Swagger UI: http://localhost:8080/swagger-ui.html
-Health endpoint: http://localhost:8080/actuator/health
+- INFO: Spring Boot app running at http://localhost:8080
+- Swagger UI: http://localhost:8080/swagger-ui.html
+- Health endpoint: http://localhost:8080/actuator/health
 
 ### 4. Run AI Engine
 ```bash 
@@ -91,12 +90,12 @@ cd ai-engine/app
 pip install -r requirements.txt
 uvicorn main:app --reload 
 ```
-INFO: FastAPI running on http://127.0.0.1:8000 OR http://localhost:8000
-Swagger AI Docs: http://localhost:8000/docs
-Health endpoint: http://localhost:8000/health
+- INFO: FastAPI running on http://127.0.0.1:8000 OR http://localhost:8000
+- Swagger AI Docs: http://localhost:8000/docs
+- Health endpoint: http://localhost:8000/health
 
 ### 5. Run Database
-INFO: PostgreSQL running on localhost:5432
+- INFO: PostgreSQL running on localhost:5432
 
 ---
 

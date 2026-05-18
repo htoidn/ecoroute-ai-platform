@@ -36,6 +36,8 @@ services:
       POSTGRES_USER: ecoroute_hdnh
       POSTGRES_PASSWORD: eco7ro1ute
       AI_SERVICE_URL: http://ai-service:8000
+      # Activate the 'local' Spring profile for local development so DataInitializer runs
+      SPRING_PROFILES_ACTIVE: local
 
   frontend:
     build:
@@ -76,6 +78,8 @@ services:
 
     volumes:
       - pgadmin_data:/var/lib/pgadmin
+      # Mount local config to force desktop/server-less mode so pgAdmin UI remains available without repeated logins in dev
+      - ./docker/pgadmin/config_local.py:/pgadmin4/config_local.py:ro
 
 volumes:
   postgres_data:

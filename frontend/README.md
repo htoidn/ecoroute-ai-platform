@@ -71,3 +71,50 @@ export default defineConfig([
   },
 ])
 ```
+
+---
+
+# Build & deploy (Docker vs GitHub Pages)
+
+This section explains the two common build flows used by this project:
+
+- Docker / local development (serve at `/`)
+- GitHub Pages (serve under `/ecoroute-ai-platform/`)
+
+Quick commands
+
+Install dependencies:
+
+```bash
+cd frontend
+npm ci
+```
+
+Docker / local (default)
+
+```bash
+# Build frontend assets for root hosting (nginx/Docker)
+npm run build
+
+# Rebuild docker image and restart container from project root
+docker-compose build frontend
+docker-compose up -d frontend
+# or rebuild & start the full stack
+docker-compose up --build -d
+```
+
+GitHub Pages
+
+```bash
+# Build assets with correct base for GitHub Pages
+npm run build:gh-pages
+# Deploy frontend/dist to your gh-pages branch or let the included GitHub Actions workflow deploy on push to main
+```
+
+Notes
+
+- `npm run build` produces assets that expect to be served from `/assets/...` (root) — suitable for Docker/nginx.
+- `npm run build:gh-pages` produces assets using the subpath `/ecoroute-ai-platform/` so the site works on GitHub Pages.
+- A GitHub Actions workflow `.github/workflows/deploy-frontend-gh-pages.yml` is included; it will run preview builds for PRs and deploy on pushes to `main`.
+
+

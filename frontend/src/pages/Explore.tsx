@@ -1,4 +1,6 @@
 import {useEffect, useState} from 'react';
+import {useNotification} from '../contexts/NotificationContext';
+import {useNavigate} from 'react-router-dom';
 import styled from 'styled-components';
 import {getAllDestinations, searchDestinations} from '../services/api';
 import {useTheme} from '../contexts/ThemeContext';
@@ -158,34 +160,47 @@ const ActionButton = styled(Button)`
     text-align: center;
 `;
 
+
 export default function Explore() {
     const {theme} = useTheme();
+    const navigate = useNavigate();
+    const {showToast} = useNotification();
     const [destinations, setDestinations] = useState<Destination[]>([]);
     const [filteredDestinations, setFilteredDestinations] = useState<Destination[]>([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [slideIndex, setSlideIndex] = useState(0);
 
+    const getDestinationId = (item: unknown): number | undefined => {
+        const i: any = item as any;
+        return i?.id ?? i?.destinationId ?? i?.destination_id ?? i?.Id ?? i?.destination?.id;
+    };
+
     useEffect(() => {
-        loadDestinations();
+        let mounted = true;
+        (async () => {
+            setLoading(true);
+            try {
+                const response = await getAllDestinations();
+                if (!mounted) return;
+                setDestinations(response.data);
+                setFilteredDestinations(response.data);
+            } catch (error) {
+                console.error('Failed to load destinations:', error);
+            } finally {
+                if (mounted) setLoading(false);
+            }
+        })();
+
         const interval = setInterval(() => {
             setSlideIndex(prev => (prev + 1) % 3);
         }, 3000);
-        return () => clearInterval(interval);
-    }, []);
 
-    const loadDestinations = async () => {
-        setLoading(true);
-        try {
-            const response = await getAllDestinations();
-            setDestinations(response.data);
-            setFilteredDestinations(response.data);
-        } catch (error) {
-            console.error('Failed to load destinations:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+        return () => {
+            mounted = false;
+            clearInterval(interval);
+        };
+    }, []);
 
     const handleSearch = async (query: string) => {
         setSearchQuery(query);
@@ -258,8 +273,8 @@ export default function Explore() {
                         Found {filteredDestinations.length} destination{filteredDestinations.length !== 1 ? 's' : ''}
                     </p>
                     <CardGrid>
-                        {filteredDestinations.map(destination => (
-                            <DestinationCard key={destination.id} theme={theme}>
+                        {filteredDestinations.map((destination, idx) => (
+                            <DestinationCard key={destination.id ?? idx} theme={theme}>
                                 <ImageSlideshow>
                                     <Slide src={`https://picsum.photos/400/300?random=${destination.id}1`}
                                            active={slideIndex === 0}/>
@@ -331,7 +346,20 @@ export default function Explore() {
                                         <div>🍂 Best: {destination.bestSeason}</div>
                                     </div>
 
-                                    <ActionButton variant="primary">
+                                    <ActionButton
+                                        onClick={() => {
+                                            // Defensive id extraction - API may return different id field names in some responses
+                                            const destId = getDestinationId(destination);
+                                            if (destId === undefined || destId === null) {
+                                                // don't navigate with undefined id; show a user-friendly toast
+                                                console.warn('Attempted to navigate to destination with missing id', destination);
+                                                showToast('Destination id is missing for this item', 'error');
+                                                return;
+                                            }
+                                            navigate(`/destination/${destId}`);
+                                        }}
+                                        variant="primary"
+                                    >
                                         View Details →
                                     </ActionButton>
                                 </CardContent>

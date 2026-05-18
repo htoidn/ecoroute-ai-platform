@@ -1,8 +1,9 @@
 import {useEffect, useState} from 'react';
 import {useNavigate, useParams} from 'react-router-dom';
 import styled from 'styled-components';
-import {getDestinationById} from '../services/api';
+import {getDestinationById, getAllRecommendations, getAllDestinations} from '../services/api';
 import {useTheme} from '../contexts/ThemeContext';
+import { useNotification } from '../contexts/NotificationContext';
 import {Badge, EmptyState, LoadingSpinner} from '../styles/SharedStyles';
 
 interface Destination {
@@ -20,6 +21,22 @@ interface Destination {
     tags: string;
     latitude?: number;
     longitude?: number;
+}
+
+interface Recommendation {
+    id: number;
+    userId: number;
+    destinationId: number;
+    aiScore: number;
+    reason?: string;
+}
+
+interface TopDest {
+    id: number;
+    name: string;
+    country: string;
+    avgScore: number;
+    count: number;
 }
 
 const Container = styled.div`
@@ -55,7 +72,8 @@ const BackButton = styled.button`
     }
 `;
 
-const HeroSection = styled.div<{ imageId?: number }>`
+// use a transient prop ($imageId) so the numeric id isn't forwarded to the DOM
+const HeroSection = styled.div<{ $imageId?: number }>`
     position: relative;
     height: 400px;
     background: linear-gradient(135deg, #48bb78, #38a169);
@@ -68,7 +86,7 @@ const HeroSection = styled.div<{ imageId?: number }>`
         left: 0;
         right: 0;
         bottom: 0;
-        background-image: url('https://picsum.photos/1200/400?random=${props => props.imageId || 1}');
+        background-image: url('https://picsum.photos/1200/400?random=${props => props.$imageId || 1}');
         background-size: cover;
         background-position: center;
         opacity: 0.7;
@@ -323,26 +341,157 @@ export default function DestinationDetail() {
     const {id} = useParams<{ id: string }>();
     const navigate = useNavigate();
     const {theme} = useTheme();
+    const { showToast } = useNotification();
     const [destination, setDestination] = useState<Destination | null>(null);
     const [loading, setLoading] = useState(true);
+    const [top5, setTop5] = useState<TopDest[]>([]);
+    const [related, setRelated] = useState<Destination[]>([]);
 
+    // Effect 1: fetch destination for the given `id` and set `destination` state
     useEffect(() => {
-        loadDestination();
+        let mounted = true;
+
+        (async () => {
+            setLoading(true);
+            try {
+                if (id) {
+                    const parsed = parseInt(id);
+                    if (isNaN(parsed)) {
+                        console.warn('Invalid destination id in URL:', id);
+                        if (mounted) setDestination(null);
+                        return;
+                    }
+                    const res = await getDestinationById(parsed);
+                    if (mounted) setDestination(res.data);
+
+                    // also eagerly load top5 and related right after fetching the destination
+                    try {
+                        const [recsResp, destsResp] = await Promise.all([getAllRecommendations(), getAllDestinations()]);
+                        const recs: Recommendation[] = recsResp.data;
+                        const dests: Destination[] = destsResp.data;
+
+                        // compute top 5 by avg ai score
+                        const scores: {[key: number]: {id: number; name: string; country: string; count: number; total: number}} = {};
+                        recs.forEach(r => {
+                            if (!scores[r.destinationId]) {
+                                const d = dests.find(dd => dd.id === r.destinationId);
+                                scores[r.destinationId] = {
+                                    id: r.destinationId,
+                                    name: d?.name || `Destination ${r.destinationId}`,
+                                    country: d?.country || 'Unknown',
+                                    count: 0,
+                                    total: 0,
+                                };
+                            }
+                            scores[r.destinationId].count += 1;
+                            scores[r.destinationId].total += r.aiScore;
+                        });
+
+                        const top = Object.values(scores)
+                            .map(s => ({id: s.id, name: s.name, country: s.country, avgScore: s.total / s.count, count: s.count}))
+                            .sort((a, b) => b.avgScore - a.avgScore)
+                            .slice(0, 5);
+
+                        if (mounted) setTop5(top);
+
+                        // compute related for this destination
+                        const curDest = res.data as Destination;
+                        if (curDest) {
+                            const currentTags = (curDest.tags || '').split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+                            const relatedCandidates = dests.filter(d => d.id !== curDest.id);
+                            const scoredRelated = relatedCandidates.map(d => {
+                                const tags = (d.tags || '').split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+                                const shared = tags.filter(t => currentTags.includes(t)).length;
+                                const sameCountry = d.country === curDest.country ? 1 : 0;
+                                return {d, score: shared * 2 + sameCountry};
+                            }).filter(x => x.score > 0)
+                              .sort((a, b) => b.score - a.score || b.d.sustainabilityScore - a.d.sustainabilityScore)
+                              .slice(0, 5)
+                              .map(x => x.d);
+
+                            if (mounted) setRelated(scoredRelated);
+                        }
+                    } catch (err) {
+                        console.error('Failed to eagerly load top/related data:', err);
+                    }
+                } else {
+                    if (mounted) setDestination(null);
+                }
+            } catch (error) {
+                console.error('Failed to load destination:', error);
+                if (mounted) setDestination(null);
+            } finally {
+                if (mounted) setLoading(false);
+            }
+        })();
+
+        return () => { mounted = false; };
     }, [id]);
 
-    const loadDestination = async () => {
-        setLoading(true);
-        try {
-            if (id) {
-                const response = await getDestinationById(parseInt(id));
-                setDestination(response.data);
+    // Effect 2: compute top5 and related destinations whenever `destination` changes
+    useEffect(() => {
+        let mounted = true;
+
+        (async () => {
+            try {
+                const [recsResp, destsResp] = await Promise.all([getAllRecommendations(), getAllDestinations()]);
+                const recs: Recommendation[] = recsResp.data;
+                const dests: Destination[] = destsResp.data;
+
+                // compute top 5 by avg ai score
+                const scores: {[key: number]: {id: number; name: string; country: string; count: number; total: number}} = {};
+                recs.forEach(r => {
+                    if (!scores[r.destinationId]) {
+                        const d = dests.find(dd => dd.id === r.destinationId);
+                        scores[r.destinationId] = {
+                            id: r.destinationId,
+                            name: d?.name || `Destination ${r.destinationId}`,
+                            country: d?.country || 'Unknown',
+                            count: 0,
+                            total: 0,
+                        };
+                    }
+                    scores[r.destinationId].count += 1;
+                    scores[r.destinationId].total += r.aiScore;
+                });
+
+                const top = Object.values(scores)
+                    .map(s => ({id: s.id, name: s.name, country: s.country, avgScore: s.total / s.count, count: s.count}))
+                    .sort((a, b) => b.avgScore - a.avgScore)
+                    .slice(0, 5);
+
+                if (mounted) setTop5(top);
+
+                // compute related destinations if we have a current destination
+                if (mounted && destination) {
+                    const currentTags = (destination.tags || '').split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+                    const relatedCandidates = dests.filter(d => d.id !== destination.id);
+                    const scoredRelated = relatedCandidates.map(d => {
+                        const tags = (d.tags || '').split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+                        const shared = tags.filter(t => currentTags.includes(t)).length;
+                        const sameCountry = d.country === destination.country ? 1 : 0;
+                        return {d, score: shared * 2 + sameCountry};
+                    }).filter(x => x.score > 0)
+                      .sort((a, b) => b.score - a.score || b.d.sustainabilityScore - a.d.sustainabilityScore)
+                      .slice(0, 5)
+                      .map(x => x.d);
+
+                    if (mounted) setRelated(scoredRelated);
+                } else {
+                    if (mounted) setRelated([]);
+                }
+            } catch (error) {
+                console.error('Failed to load destination/top/related data:', error);
+                if (mounted) {
+                    setTop5([]);
+                    setRelated([]);
+                }
             }
-        } catch (error) {
-            console.error('Failed to load destination:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+        })();
+
+        return () => { mounted = false; };
+    }, [destination, id]);
+
 
     if (loading) {
         return (
@@ -380,7 +529,7 @@ export default function DestinationDetail() {
         <Container theme={theme}>
             <BackButton onClick={() => navigate(-1)}>← Back to Recommendations</BackButton>
 
-            <HeroSection imageId={destination.id}>
+            <HeroSection $imageId={destination.id}>
                 <HeroOverlay>
                     <HeroTitle>{destination.name}</HeroTitle>
                     <HeroSubtitle>🌍 {destination.country}</HeroSubtitle>
@@ -536,6 +685,51 @@ export default function DestinationDetail() {
                             for sustainable tourism.
                         </p>
                     </RecommendationBox>
+                    {related.length > 0 && (
+                        <div style={{marginTop: '2rem'}}>
+                            <PageTitle style={{marginBottom: '1rem'}}>🔗 Related Destinations</PageTitle>
+                            <div style={{display: 'flex', gap: '0.75rem', flexWrap: 'wrap'}}>
+                                {related.map(r => (
+                                    <div key={r.id} style={{background: theme.colors.cardBg, padding: '0.75rem 1rem', borderRadius: 10, border: `1px solid ${theme.colors.border}`, minWidth: 220}}>
+                                        <div style={{fontWeight: 700}}>{r.name}</div>
+                                        <div style={{fontSize: '0.85rem', color: theme.colors.textSecondary}}>🌍 {r.country}</div>
+                                        <div style={{marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
+                                            <div style={{fontSize: '0.85rem', color: theme.colors.textSecondary}}>Score: {r.sustainabilityScore}/100</div>
+                                            <button onClick={() => navigate(`/destination/${r.id}`)} style={{background: theme.colors.primary, color: 'white', border: 'none', padding: '0.35rem 0.5rem', borderRadius: 8, fontWeight: 700}}>View</button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+                    {top5.length > 0 && (
+                        <div style={{marginTop: '2rem'}}>
+                            <PageTitle style={{marginBottom: '1rem'}}>🏆 Top 5 Destinations (by AI Score)</PageTitle>
+                            <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem'}}>
+                                {top5.map((d) => (
+                                    <div key={d.id} style={{background: theme.colors.cardBg, padding: '1rem', borderRadius: '12px', border: `1px solid ${theme.colors.border}`}}>
+                                        <div style={{display: 'flex', gap: '0.75rem', alignItems: 'center'}}>
+                                            <img src={`https://picsum.photos/120/80?random=${d.id + 8000}`} alt={d.name} style={{width: 100, height: 64, objectFit: 'cover', borderRadius: 8}} />
+                                            <div style={{flex: 1}}>
+                                                <div style={{fontWeight: 700}}>{d.name}</div>
+                                                <div style={{fontSize: '0.85rem', color: theme.colors.textSecondary}}>🌍 {d.country}</div>
+                                            </div>
+                                            <Badge color="green">{d.avgScore.toFixed(1)}/100</Badge>
+                                        </div>
+                                        <div style={{display: 'flex', justifyContent: 'space-between', marginTop: '0.75rem', alignItems: 'center'}}>
+                                            <div style={{fontSize: '0.85rem', color: theme.colors.textSecondary}}>{d.count} rec{d.count > 1 ? 's' : ''}</div>
+                                            <button onClick={() => {
+                                                if (!d.id) { showToast?.('Destination id missing', 'error'); return; }
+                                                navigate(`/destination/${d.id}`);
+                                            }} style={{background: theme.colors.primary, color: 'white', border: 'none', padding: '0.5rem 0.75rem', borderRadius: 8, fontWeight: 700}}>
+                                                Explore →
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                 </MainCard>
             </ContentSection>
         </Container>

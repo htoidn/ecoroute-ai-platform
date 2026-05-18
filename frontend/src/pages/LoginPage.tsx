@@ -133,8 +133,13 @@ export default function LoginPage() {
         setLoading(true);
 
         try {
-            await login(username, password);
-            navigate('/');
+            // login now returns the logged-in user object
+            const loggedInUser = await login(username, password);
+            if (loggedInUser && loggedInUser.role === 'admin') {
+                navigate('/recommendations');
+            } else {
+                navigate('/');
+            }
         } catch {
             setError('Invalid username or password');
         } finally {

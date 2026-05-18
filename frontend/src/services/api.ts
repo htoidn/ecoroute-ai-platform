@@ -36,6 +36,18 @@ export const getUserById = async (id: number) => {
 };
 
 export const getAllUsers = async () => {
-    return API.get('/users');
+    return API.get(`/users`);
 };
+
+// Get all users map for recommendations
+export const getAllUsersMap = async () => {
+    const response = await API.get(`/users`);
+    const usersMap: { [key: number]: any } = {};
+    response.data.forEach((user: any) => {
+        usersMap[user.id] = user;
+    });
+    return usersMap;
+};
+
+export default API;
 

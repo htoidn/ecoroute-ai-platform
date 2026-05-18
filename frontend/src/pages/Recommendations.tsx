@@ -3,6 +3,7 @@ import {useNavigate} from 'react-router-dom';
 import styled from 'styled-components';
 import {getAllDestinations, getAllRecommendations} from '../services/api';
 import {useTheme} from '../contexts/ThemeContext';
+import {useNotification} from '../contexts/NotificationContext';
 import {
     Badge,
     EmptyState,
@@ -27,6 +28,10 @@ interface Destination {
     name: string;
     country: string;
     sustainabilityScore: number;
+    costIndex?: number;
+    crowdIndex?: number;
+    publicTransportScore?: number;
+    description?: string;
 }
 
 const TabContainer = styled.div`
@@ -259,6 +264,103 @@ const StatCard = styled.div`
     }
 `;
 
+const TopDestinationsSection = styled.div`
+    margin-top: 3rem;
+    padding: 2rem;
+    background: ${props => props.theme?.colors?.cardBg || '#ffffff'};
+    border-radius: 12px;
+    box-shadow: 0 4px 15px ${props => props.theme?.colors?.shadow || 'rgba(0, 0, 0, 0.1)'};
+`;
+
+const DestinationCardSmall = styled.div<{ theme: any }>`
+    background: ${props => props.theme?.colors?.bgSecondary || '#f7fafc'};
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid ${props => props.theme?.colors?.border || '#e2e8f0'};
+    transition: all 0.3s ease;
+    cursor: pointer;
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+
+    &:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 20px rgba(72, 187, 120, 0.2);
+        background: ${props => props.theme?.colors?.cardBg || '#ffffff'};
+    }
+
+    @media (max-width: 768px) {
+        flex-direction: column;
+    }
+`;
+
+const DestinationImageSmall = styled.img`
+    width: 150px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 8px;
+    flex-shrink: 0;
+
+    @media (max-width: 768px) {
+        width: 100%;
+        height: 150px;
+    }
+`;
+
+const DestinationInfoSmall = styled.div`
+    flex: 1;
+`;
+
+const DestinationNameSmall = styled.h3`
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: ${props => props.theme?.colors?.text || '#1a202c'};
+    margin: 0 0 0.5rem 0;
+`;
+
+const DestinationRankSmall = styled.div`
+    font-size: 0.9rem;
+    color: ${props => props.theme?.colors?.textSecondary || '#718096'};
+    margin-bottom: 0.75rem;
+`;
+
+const DestinationScoresSmall = styled.div`
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.75rem;
+    font-size: 0.85rem;
+    color: ${props => props.theme?.colors?.textSecondary || '#718096'};
+    margin-top: 0.75rem;
+`;
+
+const ViewDetailsButtonSmall = styled.button`
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, #48bb78, #38a169);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+    margin-top: 0.75rem;
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
+    }
+`;
+
+const SectionTitleSmall = styled.h2`
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: ${props => props.theme?.colors?.text || '#1a202c'};
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+`;
+
 const ViewDetailsButton = styled.button`
     padding: 0.5rem 1rem;
     background: linear-gradient(135deg, #48bb78, #38a169);
@@ -283,15 +385,12 @@ const ViewDetailsButton = styled.button`
 
 export default function Recommendations() {
     const {theme} = useTheme();
+    const {showToast} = useNotification();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<'table' | 'chart'>('table');
     const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
     const [destinations, setDestinations] = useState<Map<number, Destination>>(new Map());
     const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        loadData();
-    }, []);
 
     const loadData = async () => {
         setLoading(true);
@@ -314,6 +413,10 @@ export default function Recommendations() {
             setLoading(false);
         }
     };
+
+    useEffect(() => {
+        loadData();
+    }, []);
 
     const getDestinationName = (destId: number) => {
         return destinations.get(destId)?.name || `Destination ${destId}`;
@@ -346,6 +449,35 @@ export default function Recommendations() {
             }))
             .sort((a, b) => b.avgScore - a.avgScore)
             .slice(0, 10);
+    };
+
+    const getTop5DestinationsByAIScore = () => {
+        const destScores: {
+            [key: number]: { id: number; name: string; country: string; count: number; avgScore: number }
+        } = {};
+
+        recommendations.forEach(rec => {
+            if (!destScores[rec.destinationId]) {
+                const dest = destinations.get(rec.destinationId);
+                destScores[rec.destinationId] = {
+                    id: rec.destinationId,
+                    name: dest?.name || getDestinationName(rec.destinationId),
+                    country: dest?.country || 'Unknown',
+                    count: 0,
+                    avgScore: 0,
+                };
+            }
+            destScores[rec.destinationId].count += 1;
+            destScores[rec.destinationId].avgScore += rec.aiScore;
+        });
+
+        return Object.values(destScores)
+            .map(d => ({
+                ...d,
+                avgScore: d.avgScore / d.count,
+            }))
+            .sort((a, b) => b.avgScore - a.avgScore)
+            .slice(0, 5);
     };
 
     if (loading) {
@@ -455,7 +587,17 @@ export default function Recommendations() {
                                     {rec.reason}
                                 </TableCell>
                                 <TableCell data-label="Action" theme={theme}>
-                                    <ViewDetailsButton onClick={() => navigate(`/destination/${rec.destinationId}`)}>
+                                    <ViewDetailsButton onClick={() => {
+                                        const destId = rec.destinationId ?? (rec as any)?.destination?.id;
+                                        if (destId === undefined || destId === null) {
+                                            console.warn('Missing destination id for recommendation', rec);
+                                            // show user-friendly toast
+                                            (showToast ?? (() => {
+                                            }))('Destination id is missing for this recommendation', 'error');
+                                            return;
+                                        }
+                                        navigate(`/destination/${destId}`);
+                                    }}>
                                         View Details →
                                     </ViewDetailsButton>
                                 </TableCell>
@@ -525,6 +667,68 @@ export default function Recommendations() {
                     </ChartContainer>
                 </>
             )}
+
+            {/* Top 5 Destinations with Highest AI Score */}
+            <TopDestinationsSection theme={theme}>
+                <SectionTitleSmall>🏆 Top 5 Destinations with Highest AI Scores</SectionTitleSmall>
+                <div style={{display: 'flex', flexDirection: 'column', gap: '1.5rem'}}>
+                    {getTop5DestinationsByAIScore().map((dest, index) => (
+                        <DestinationCardSmall key={dest.id} theme={theme}>
+                            <DestinationImageSmall
+                                src={`https://picsum.photos/150/100?random=${dest.id + 6000}`}
+                                alt={dest.name}
+                            />
+                            <DestinationInfoSmall>
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'flex-start',
+                                    justifyContent: 'space-between'
+                                }}>
+                                    <div>
+                                        <DestinationRankSmall>#{index + 1} Top Destination</DestinationRankSmall>
+                                        <DestinationNameSmall>{dest.name}</DestinationNameSmall>
+                                        <p style={{
+                                            margin: '0.5rem 0 0 0',
+                                            fontSize: '0.9rem',
+                                            color: theme.colors.textSecondary
+                                        }}>
+                                            🌍 {dest.country}
+                                        </p>
+                                    </div>
+                                    <div style={{textAlign: 'right', minWidth: '120px'}}>
+                                        <Badge color="green" style={{fontSize: '1rem', padding: '0.5rem 1rem'}}>
+                                            AI Score: {dest.avgScore.toFixed(1)}/100
+                                        </Badge>
+                                        <div style={{
+                                            fontSize: '0.8rem',
+                                            color: theme.colors.textSecondary,
+                                            marginTop: '0.5rem'
+                                        }}>
+                                            {dest.count} recommendation{dest.count > 1 ? 's' : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                                <DestinationScoresSmall>
+                                    <div>🏅 Avg Score: {dest.avgScore.toFixed(1)}/100</div>
+                                    <div>📊 Total Recs: {dest.count}</div>
+                                </DestinationScoresSmall>
+                                <ViewDetailsButtonSmall onClick={() => {
+                                    const dAny: any = dest as any;
+                                    const destId = dAny?.id ?? dAny?.destinationId ?? dAny?.destination_id ?? dAny?.Id;
+                                    if (destId === undefined || destId === null) {
+                                        console.warn('Attempted to navigate to destination with missing id', dest);
+                                        showToast('Destination id is missing for this item', 'error');
+                                        return;
+                                    }
+                                    navigate(`/destination/${destId}`);
+                                }}>
+                                    Explore This Destination →
+                                </ViewDetailsButtonSmall>
+                            </DestinationInfoSmall>
+                        </DestinationCardSmall>
+                    ))}
+                </div>
+            </TopDestinationsSection>
         </PageContainer>
     );
 }

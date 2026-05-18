@@ -5,12 +5,12 @@ import {Container, MainContent, SidebarWrapper} from '../styles/LayoutStyles';
 
 export default function App() {
     return (<Container>
-            <SidebarWrapper>
-                <Sidebar/>
-            </SidebarWrapper>
+        <SidebarWrapper>
+            <Sidebar/>
+        </SidebarWrapper>
 
-            <MainContent>
-                <Home/>
-            </MainContent>
-        </Container>);
+        <MainContent>
+            <Home/>
+        </MainContent>
+    </Container>);
 }

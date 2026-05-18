@@ -1,5 +1,6 @@
 import type {ReactNode} from 'react';
 import React, {createContext, useContext, useEffect, useState} from 'react';
+import {ThemeProvider as StyledThemeProvider} from 'styled-components';
 
 export interface ThemeType {
     mode: 'light' | 'dark';
@@ -91,5 +92,9 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({children}) => {
         theme, toggleTheme, setMode,
     };
 
-    return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+    return (
+        <ThemeContext.Provider value={value}>
+            <StyledThemeProvider theme={theme}>{children}</StyledThemeProvider>
+        </ThemeContext.Provider>
+    );
 };

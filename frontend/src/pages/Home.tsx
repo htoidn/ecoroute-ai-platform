@@ -1,8 +1,9 @@
 import {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import styled from 'styled-components';
-import {getAllDestinations, getAllRecommendations} from '../services/api';
+import {getAllDestinations, getAllRecommendations, getAllUsers} from '../services/api';
 import {useTheme} from '../contexts/ThemeContext';
+import { useNotification } from '../contexts/NotificationContext';
 import {Badge, Button, LoadingSpinner, PageContainer, SearchContainer, SearchInput,} from '../styles/SharedStyles';
 
 interface Destination {
@@ -204,13 +205,17 @@ const EmptyMessage = styled.div`
 `;
 
 export default function Home() {
-    const {theme} = useTheme();
-    const navigate = useNavigate();
-    const [searchInput, setSearchInput] = useState('');
-    const [topDestinations, setTopDestinations] = useState<Destination[]>([]);
-    const [featuredRecommendations, setFeaturedRecommendations] = useState<any[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [backgroundIndex, setBackgroundIndex] = useState(0);
+     const {theme} = useTheme();
+      const navigate = useNavigate();
+      const { showToast } = useNotification();
+     const [searchInput, setSearchInput] = useState('');
+     const [topDestinations, setTopDestinations] = useState<Destination[]>([]);
+     const [allDestinations, setAllDestinations] = useState<Destination[]>([]);
+     const [featuredRecommendations, setFeaturedRecommendations] = useState<any[]>([]);
+     const [loading, setLoading] = useState(true);
+     const [backgroundIndex, setBackgroundIndex] = useState(0);
+     const [searchResults, setSearchResults] = useState<Destination[]>([]);
+     const [hasSearched, setHasSearched] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -225,45 +230,71 @@ export default function Home() {
         return () => clearInterval(interval);
     }, []);
 
-    const loadData = async () => {
-        setLoading(true);
-        try {
-            const [destsResponse, recsResponse] = await Promise.all([
-                getAllDestinations(),
-                getAllRecommendations(),
-            ]);
+      const loadData = async () => {
+          setLoading(true);
+          try {
+              const [destsResponse, recsResponse, usersResponse] = await Promise.all([
+                  getAllDestinations(),
+                  getAllRecommendations(),
+                  getAllUsers(),
+              ]);
 
-            // Get top 6 destinations by sustainability score
-            const sorted = destsResponse.data
-                .sort((a: Destination, b: Destination) => b.sustainabilityScore - a.sustainabilityScore)
-                .slice(0, 6);
-            setTopDestinations(sorted);
+              // Store all destinations for search
+              setAllDestinations(destsResponse.data);
 
-            // Get top 8 recommendations with varied destinations and users
-            const topRecs = recsResponse.data
-                .sort((a: Recommendation, b: Recommendation) => b.aiScore - a.aiScore)
-                .slice(0, 8)
-                .map((rec: Recommendation, index: number) => {
-                    const dest = destsResponse.data.find((d: Destination) => d.id === rec.destinationId);
-                    return {
-                        ...rec,
-                        destination: dest,
-                        imageId: 2000 + index, // Unique image ID for each card
-                    };
-                });
-            setFeaturedRecommendations(topRecs);
-        } catch (error) {
-            console.error('Failed to load data:', error);
-        } finally {
-            setLoading(false);
-        }
-    };
+              // Create users map
+              const usersMap: { [key: number]: any } = {};
+              usersResponse.data.forEach((user: any) => {
+                  usersMap[user.id] = user;
+              });
 
-    const handleSearch = () => {
-        if (searchInput.trim()) {
-            navigate(`/explore?search=${encodeURIComponent(searchInput)}`);
-        }
-    };
+              // Get top 8 destinations by sustainability score
+              const sorted = destsResponse.data
+                  .sort((a: Destination, b: Destination) => b.sustainabilityScore - a.sustainabilityScore)
+                  .slice(0, 8);
+              setTopDestinations(sorted);
+
+             // Get top 8 recommendations with varied destinations and users
+             const topRecs = recsResponse.data
+                 .sort((a: Recommendation, b: Recommendation) => b.aiScore - a.aiScore)
+                 .slice(0, 8)
+                 .map((rec: Recommendation, index: number) => {
+                     const dest = destsResponse.data.find((d: Destination) => d.id === rec.destinationId);
+                     const user = usersMap[rec.userId];
+                     return {
+                         ...rec,
+                         destination: dest,
+                         user: user,
+                         imageId: 2000 + index, // Unique image ID for each card
+                     };
+                 });
+             setFeaturedRecommendations(topRecs);
+         } catch (error) {
+             console.error('Failed to load data:', error);
+         } finally {
+             setLoading(false);
+         }
+     };
+
+     const handleSearch = () => {
+         if (searchInput.trim()) {
+             const query = searchInput.toLowerCase();
+             // Find exact and partial matches
+             const matches = allDestinations.filter(dest =>
+                 dest.name.toLowerCase().includes(query) ||
+                 dest.country.toLowerCase().includes(query) ||
+                 dest.description.toLowerCase().includes(query)
+             );
+             // Sort by exact name match first
+             matches.sort((a, b) => {
+                 const aExact = a.name.toLowerCase() === query ? 0 : 1;
+                 const bExact = b.name.toLowerCase() === query ? 0 : 1;
+                 return aExact - bExact;
+             });
+             setSearchResults(matches);
+             setHasSearched(true);
+         }
+     };
 
     if (loading) {
         return (
@@ -299,49 +330,98 @@ export default function Home() {
                 </SearchContainer>
             </HeroSection>
 
-            {/* Featured Recommendations */}
-            <Section>
-                <SectionTitle>⭐ AI-Powered Recommendations</SectionTitle>
-                {featuredRecommendations.length > 0 ? (
-                    <CardGrid>
-                        {featuredRecommendations.map(rec => (
-                            <DestinationCard key={rec.id} theme={theme}>
-                                <CardImage
-                                    src={`https://picsum.photos/400/300?random=${rec.imageId}`}
-                                    alt={`${rec.destination?.name} image`}
-                                />
-                                <CardContent>
-                                    <CardTitle>{rec.destination?.name}</CardTitle>
-                                    <CardSubtitle>{rec.destination?.country} • User #{rec.userId}</CardSubtitle>
-                                    <CardDescription>{rec.reason}</CardDescription>
+             {/* Featured Recommendations */}
+             <Section>
+                 <SectionTitle>⭐ AI-Powered Recommendations</SectionTitle>
+                 {featuredRecommendations.length > 0 ? (
+                     <CardGrid>
+                         {featuredRecommendations.map(rec => (
+                             <DestinationCard key={rec.id} theme={theme}>
+                                 <CardImage
+                                     src={`https://picsum.photos/400/300?random=${rec.imageId}`}
+                                     alt={`${rec.destination?.name} image`}
+                                 />
+                                 <CardContent>
+                                     <CardTitle>{rec.destination?.name}</CardTitle>
+                                     <CardSubtitle>
+                                         {rec.destination?.country} • 👤 User #{rec.userId}
+                                     </CardSubtitle>
+                                     <CardDescription>{rec.reason}</CardDescription>
 
-                                    <div style={{marginBottom: '1rem'}}>
-                                        <Badge color="green">AI Score: {rec.aiScore}/100</Badge>
-                                    </div>
+                                     <div style={{marginBottom: '1rem'}}>
+                                         <Badge color="green">AI Score: {rec.aiScore}/100</Badge>
+                                     </div>
 
-                                    <ScoreRow theme={theme}>
-                                        <div>♻️ Sustainability: {rec.destination?.sustainabilityScore}%</div>
-                                        <div>💶 Cost Index: {rec.destination?.costIndex}</div>
-                                    </ScoreRow>
+                                     <ScoreRow theme={theme}>
+                                         <div>♻️ Sustainability: {rec.destination?.sustainabilityScore}%</div>
+                                         <div>💶 Cost Index: ${rec.destination?.costIndex}</div>
+                                     </ScoreRow>
 
-                                    <ActionButton onClick={() => navigate(`/destination/${rec.destinationId}`)}
-                                                  variant="primary">
-                                        View Details →
-                                    </ActionButton>
-                                </CardContent>
-                            </DestinationCard>
-                        ))}
-                    </CardGrid>
-                ) : (
-                    <EmptyMessage theme={theme}>
-                        <div className="icon">🤖</div>
-                        <p>No recommendations available yet</p>
-                        <Button onClick={() => navigate('/explore')} variant="secondary">
-                            Explore Destinations
-                        </Button>
-                    </EmptyMessage>
-                )}
-            </Section>
+                                     <ActionButton onClick={() => navigate('/recommendations')}
+                                                   variant="primary">
+                                         View Details →
+                                     </ActionButton>
+                                 </CardContent>
+                             </DestinationCard>
+                         ))}
+                     </CardGrid>
+                 ) : (
+                     <EmptyMessage theme={theme}>
+                         <div className="icon">🤖</div>
+                         <p>No recommendations available yet</p>
+                         <Button onClick={() => navigate('/explore')} variant="secondary">
+                             Explore Destinations
+                         </Button>
+                     </EmptyMessage>
+                 )}
+             </Section>
+
+             {/* Search Results */}
+             {hasSearched && searchResults.length > 0 && (
+                 <Section>
+                     <SectionTitle>🔍 Search Results for "{searchInput}"</SectionTitle>
+                     <CardGrid>
+                         {searchResults.map((dest, index) => (
+                             <DestinationCard key={`${dest.id}-${index}`} theme={theme}>
+                                 <CardImage
+                                     src={`https://picsum.photos/400/300?random=${dest.id + 5000}`}
+                                     alt={`${dest.name} image`}
+                                 />
+                                 <CardContent>
+                                     <CardTitle>{dest.name}</CardTitle>
+                                     <CardSubtitle>{dest.country}</CardSubtitle>
+                                     <CardDescription>{dest.description}</CardDescription>
+
+                                     <div style={{marginBottom: '1rem'}}>
+                                         <Badge color="green">Sustainability: {dest.sustainabilityScore}/100</Badge>
+                                     </div>
+
+                                     <ScoreRow theme={theme}>
+                                         <div>🚌 Transport: {dest.publicTransportScore}%</div>
+                                         <div>💶 Cost: ${dest.costIndex}</div>
+                                     </ScoreRow>
+
+                                      <ActionButton
+                                          onClick={() => {
+                                              const dAny: any = dest as any;
+                                              const destId = dAny?.id ?? dAny?.destinationId ?? dAny?.destination_id ?? dAny?.Id ?? dAny?.destination?.id;
+                                              if (destId === undefined || destId === null) {
+                                                  console.warn('Attempted to navigate to destination with missing id', dest);
+                                                  showToast('Destination id is missing for this item', 'error');
+                                                  return;
+                                              }
+                                              navigate(`/destination/${destId}`);
+                                          }}
+                                          variant="primary"
+                                      >
+                                          View Details →
+                                      </ActionButton>
+                                 </CardContent>
+                             </DestinationCard>
+                         ))}
+                     </CardGrid>
+                 </Section>
+             )}
 
             {/* Top Eco-Friendly Destinations */}
             <Section>

@@ -1,8 +1,8 @@
-import { useState } from 'react';
+import {useState} from 'react';
 import styled from 'styled-components';
-import { useAuth } from '../contexts/AuthContext';
-import { useTheme } from '../contexts/ThemeContext';
-import { Button, PageContainer, PageHeader, PageSubtitle, PageTitle } from '../styles/SharedStyles';
+import {useAuth} from '../contexts/AuthContext';
+import {useTheme} from '../contexts/ThemeContext';
+import {Button, PageContainer, PageHeader, PageSubtitle, PageTitle} from '../styles/SharedStyles';
 
 const ProfileWrapper = styled.div`
     max-width: 1000px;
@@ -55,6 +55,13 @@ const Avatar = styled.div`
         height: 100px;
         font-size: 2.5rem;
     }
+`;
+
+const AvatarImage = styled.img`
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    border-radius: 50%;
 `;
 
 const UserInfo = styled.div<{ theme: any }>`
@@ -260,23 +267,26 @@ interface ProfileFormData {
 }
 
 export default function Profile() {
-    const { user, logout } = useAuth();
-    const { theme } = useTheme();
+    const {user, logout} = useAuth();
+    const {theme} = useTheme();
     const [isEditing, setIsEditing] = useState(false);
     const [showSuccess, setShowSuccess] = useState(false);
     const [formData, setFormData] = useState<ProfileFormData>(() => {
         const saved = localStorage.getItem('user-profile');
         return saved ? JSON.parse(saved) : {
             username: user?.username || 'EcoTraveler',
-            email: localStorage.getItem('user-email') || 'user@ecoroute.ai',
+            email: localStorage.getItem('user-email') || 'htoideen@gmail.com',
             firstName: 'Eco',
             lastName: 'Traveler',
             bio: 'Passionate about sustainable tourism and eco-friendly travel.',
         };
     });
+    const [avatarDataUrl, setAvatarDataUrl] = useState<string | null>(() => {
+        return localStorage.getItem('user-avatar');
+    });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-        const { name, value } = e.target;
+        const {name, value} = e.target;
         setFormData(prev => ({
             ...prev,
             [name]: value,
@@ -286,9 +296,28 @@ export default function Profile() {
     const handleSave = (e: React.FormEvent) => {
         e.preventDefault();
         localStorage.setItem('user-profile', JSON.stringify(formData));
+        if (avatarDataUrl) {
+            localStorage.setItem('user-avatar', avatarDataUrl);
+        }
         setIsEditing(false);
         setShowSuccess(true);
         setTimeout(() => setShowSuccess(false), 3000);
+    };
+
+    const handleAvatarChange = (file?: File) => {
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+            const result = reader.result as string;
+            setAvatarDataUrl(result);
+            localStorage.setItem('user-avatar', result);
+        };
+        reader.readAsDataURL(file);
+    };
+
+    const handleAvatarInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (file) handleAvatarChange(file);
     };
 
     const handleChangePassword = () => {
@@ -320,7 +349,23 @@ export default function Profile() {
                     {/* Sidebar */}
                     <SidebarCard theme={theme}>
                         <AvatarContainer>
-                            <Avatar>👤</Avatar>
+                            <Avatar>
+                                {avatarDataUrl ? (
+                                    <AvatarImage src={avatarDataUrl} alt="avatar"/>
+                                ) : (
+                                    '👤'
+                                )}
+                            </Avatar>
+
+                            {/* hidden file input for avatar upload */}
+                            <div style={{marginTop: '0.75rem'}}>
+                                <input id="avatar-input" type="file" accept="image/*" onChange={handleAvatarInput}
+                                       style={{display: 'none'}}/>
+                                <Button variant="outline"
+                                        onClick={() => document.getElementById('avatar-input')?.click()}>
+                                    📤 Upload Avatar
+                                </Button>
+                            </div>
                         </AvatarContainer>
                         <UserInfo theme={theme}>
                             <h2>{formData.username}</h2>
@@ -330,11 +375,11 @@ export default function Profile() {
                             </Badge>
                         </UserInfo>
 
-                        <ButtonGroup style={{ marginTop: '2rem' }}>
+                        <ButtonGroup style={{marginTop: '2rem'}}>
                             <Button
                                 variant="secondary"
                                 onClick={() => setIsEditing(!isEditing)}
-                                style={{ width: '100%' }}
+                                style={{width: '100%'}}
                             >
                                 {isEditing ? '❌ Cancel' : '✏️ Edit'}
                             </Button>
@@ -362,9 +407,9 @@ export default function Profile() {
                                     </InfoField>
                                     <InfoField theme={theme}>
                                         <label>Account Status</label>
-                                        <p style={{ color: '#48bb78' }}>✅ Active</p>
+                                        <p style={{color: '#48bb78'}}>✅ Active</p>
                                     </InfoField>
-                                    <InfoField theme={theme} style={{ gridColumn: '1 / -1' }}>
+                                    <InfoField theme={theme} style={{gridColumn: '1 / -1'}}>
                                         <label>Bio</label>
                                         <p>{formData.bio}</p>
                                     </InfoField>
@@ -414,7 +459,7 @@ export default function Profile() {
                                             onChange={handleChange}
                                         />
                                     </FormField>
-                                    <FormField theme={theme} style={{ gridColumn: '1 / -1' }}>
+                                    <FormField theme={theme} style={{gridColumn: '1 / -1'}}>
                                         <label htmlFor="bio">Bio</label>
                                         <textarea
                                             id="bio"
@@ -425,7 +470,7 @@ export default function Profile() {
                                         />
                                     </FormField>
 
-                                    <ButtonGroup style={{ gridColumn: '1 / -1' }}>
+                                    <ButtonGroup style={{gridColumn: '1 / -1'}}>
                                         <Button type="submit" variant="primary">
                                             💾 Save Changes
                                         </Button>
@@ -463,17 +508,21 @@ export default function Profile() {
                         {/* Security Settings */}
                         <Card theme={theme}>
                             <h3>🔒 Security & Privacy</h3>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            <div style={{display: 'flex', flexDirection: 'column', gap: '1rem'}}>
                                 <div style={{
                                     padding: '1rem',
                                     background: `${theme.colors.bgSecondary}`,
                                     borderRadius: '8px',
                                     border: `1px solid ${theme.colors.border}`
                                 }}>
-                                    <p style={{ color: theme.colors.text, fontWeight: 500, marginBottom: '0.5rem' }}>
+                                    <p style={{color: theme.colors.text, fontWeight: 500, marginBottom: '0.5rem'}}>
                                         Password
                                     </p>
-                                    <p style={{ color: theme.colors.textSecondary, fontSize: '0.9rem', marginBottom: '1rem' }}>
+                                    <p style={{
+                                        color: theme.colors.textSecondary,
+                                        fontSize: '0.9rem',
+                                        marginBottom: '1rem'
+                                    }}>
                                         Last changed 3 months ago
                                     </p>
                                     <Button variant="secondary" onClick={handleChangePassword}>
@@ -487,10 +536,14 @@ export default function Profile() {
                                     borderRadius: '8px',
                                     border: '1px solid rgba(72, 187, 120, 0.3)'
                                 }}>
-                                    <p style={{ color: theme.colors.text, fontWeight: 500, marginBottom: '0.5rem' }}>
+                                    <p style={{color: theme.colors.text, fontWeight: 500, marginBottom: '0.5rem'}}>
                                         Two-Factor Authentication
                                     </p>
-                                    <p style={{ color: theme.colors.textSecondary, fontSize: '0.9rem', marginBottom: '1rem' }}>
+                                    <p style={{
+                                        color: theme.colors.textSecondary,
+                                        fontSize: '0.9rem',
+                                        marginBottom: '1rem'
+                                    }}>
                                         ✅ Enabled - Your account is secure
                                     </p>
                                 </div>
@@ -499,8 +552,8 @@ export default function Profile() {
 
                         {/* Danger Zone */}
                         <Card theme={theme}>
-                            <h3 style={{ color: '#e53e3e' }}>⚠️ Danger Zone</h3>
-                            <div style={{ display: 'flex', gap: '1rem', flexDirection: 'column' }}>
+                            <h3 style={{color: '#e53e3e'}}>⚠️ Danger Zone</h3>
+                            <div style={{display: 'flex', gap: '1rem', flexDirection: 'column'}}>
                                 <Button
                                     variant="outline"
                                     onClick={() => {
@@ -509,7 +562,7 @@ export default function Profile() {
                                             alert('Account deletion requested. Please contact support.');
                                         }
                                     }}
-                                    style={{ color: '#e53e3e', borderColor: '#e53e3e', width: '100%' }}
+                                    style={{color: '#e53e3e', borderColor: '#e53e3e', width: '100%'}}
                                 >
                                     🗑️ Delete Account
                                 </Button>

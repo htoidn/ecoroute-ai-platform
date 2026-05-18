@@ -690,14 +690,18 @@ export default function DestinationDetail() {
                             <PageTitle style={{marginBottom: '1rem'}}>🔗 Related Destinations</PageTitle>
                             <div style={{display: 'flex', gap: '0.75rem', flexWrap: 'wrap'}}>
                                 {related.map(r => (
-                                    <div key={r.id} style={{background: theme.colors.cardBg, padding: '0.75rem 1rem', borderRadius: 10, border: `1px solid ${theme.colors.border}`, minWidth: 220}}>
-                                        <div style={{fontWeight: 700}}>{r.name}</div>
-                                        <div style={{fontSize: '0.85rem', color: theme.colors.textSecondary}}>🌍 {r.country}</div>
-                                        <div style={{marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                                            <div style={{fontSize: '0.85rem', color: theme.colors.textSecondary}}>Score: {r.sustainabilityScore}/100</div>
-                                            <button onClick={() => navigate(`/destination/${r.id}`)} style={{background: theme.colors.primary, color: 'white', border: 'none', padding: '0.35rem 0.5rem', borderRadius: 8, fontWeight: 700}}>View</button>
-                                        </div>
-                                    </div>
+                                                    <div key={r.id} style={{background: theme.colors.cardBg, padding: '0.75rem 1rem', borderRadius: 10, border: `1px solid ${theme.colors.border}`, minWidth: 220, display: 'flex', gap: '0.75rem', alignItems: 'center'}}>
+                                                        <img src={`https://picsum.photos/120/80?random=${r.id + 9000}`} alt={r.name} style={{width: 100, height: 64, objectFit: 'cover', borderRadius: 8}} />
+                                                        <div style={{flex: 1}}>
+                                                            <div style={{fontWeight: 700}}>{r.name}</div>
+                                                            <div style={{fontSize: '0.85rem', color: theme.colors.textSecondary}}>🌍 {r.country}</div>
+                                                            <div style={{fontSize: '0.85rem', color: theme.colors.textSecondary, marginTop: '0.5rem'}}>Sustainability: {r.sustainabilityScore}/100 • Cost: ${r.costIndex?.toFixed?.(2) ?? r.costIndex}</div>
+                                                        </div>
+                                                        <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end'}}>
+                                                            <Badge color="green">{r.sustainabilityScore}</Badge>
+                                                            <button onClick={() => navigate(`/destination/${r.id}`)} style={{background: theme.colors.primary, color: 'white', border: 'none', padding: '0.35rem 0.5rem', borderRadius: 8, fontWeight: 700}}>View</button>
+                                                        </div>
+                                                    </div>
                                 ))}
                             </div>
                         </div>

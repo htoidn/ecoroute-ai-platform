@@ -340,7 +340,7 @@ export default function Explore() {
                                         color: theme.colors.textSecondary,
                                         marginBottom: '1rem'
                                     }}>
-                                        <div>💶 Cost Index: {destination.costIndex.toFixed(0)}</div>
+                                        <div>💶 Cost Index: ${destination.costIndex.toFixed(2)}</div>
                                         <div>👥 Crowd: {destination.crowdIndex.toFixed(0)}</div>
                                         <div>🌡️ Avg Temp: {destination.avgTemp}°C</div>
                                         <div>🍂 Best: {destination.bestSeason}</div>

@@ -1,7 +1,7 @@
 import {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import styled from 'styled-components';
-import {getAllDestinations, getAllRecommendations} from '../services/api';
+import {getAllDestinations, getAllRecommendations, getAllUsers} from '../services/api';
 import {useTheme} from '../contexts/ThemeContext';
 import {useNotification} from '../contexts/NotificationContext';
 import {
@@ -390,14 +390,16 @@ export default function Recommendations() {
     const [activeTab, setActiveTab] = useState<'table' | 'chart'>('table');
     const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
     const [destinations, setDestinations] = useState<Map<number, Destination>>(new Map());
+    const [usersMap, setUsersMap] = useState<Map<number, {id:number; username?:string}>>(new Map());
     const [loading, setLoading] = useState(true);
 
     const loadData = async () => {
         setLoading(true);
         try {
-            const [recsResponse, destsResponse] = await Promise.all([
+            const [recsResponse, destsResponse, usersResponse] = await Promise.all([
                 getAllRecommendations(),
                 getAllDestinations(),
+                getAllUsers(),
             ]);
 
             setRecommendations(recsResponse.data);
@@ -407,6 +409,10 @@ export default function Recommendations() {
                 destMap.set(dest.id, dest);
             });
             setDestinations(destMap);
+
+            const uMap = new Map();
+            usersResponse.data.forEach((u: any) => uMap.set(u.id, u));
+            setUsersMap(uMap);
         } catch (error) {
             console.error('Failed to load data:', error);
         } finally {
@@ -578,7 +584,7 @@ export default function Recommendations() {
                                     {getDestinationName(rec.destinationId)}
                                 </TableCell>
                                 <TableCell data-label="User ID" theme={theme}>
-                                    User #{rec.userId}
+                                    {usersMap.get(rec.userId)?.username ? `User #${rec.userId} (${usersMap.get(rec.userId)?.username})` : `User #${rec.userId}`}
                                 </TableCell>
                                 <ScoreCell data-label="AI Score" theme={theme}>
                                     <Badge color="green">{rec.aiScore}/100</Badge>

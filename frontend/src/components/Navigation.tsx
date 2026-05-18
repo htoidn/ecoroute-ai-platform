@@ -1,9 +1,9 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import {useState} from 'react';
+import {useNavigate} from 'react-router-dom';
 import styled from 'styled-components';
-import { useAuth } from '../contexts/AuthContext';
-import { useTheme, type ThemeType } from '../contexts/ThemeContext';
-import { Button } from '../styles/SharedStyles';
+import {useAuth} from '../contexts/AuthContext';
+import {type ThemeType, useTheme} from '../contexts/ThemeContext';
+import {Button} from '../styles/SharedStyles';
 
 const NavContainer = styled.nav<{ theme: ThemeType }>`
     background: ${props => props.theme.colors.cardBg};
@@ -262,14 +262,40 @@ const AuthButtons = styled.div`
     }
 `;
 
+const ThemeToggle = styled.button<{ theme: any }>`
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    background: ${props => props.theme.colors.bgSecondary};
+    border: 1px solid ${props => props.theme.colors.border};
+    color: ${props => props.theme.colors.text};
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.3s ease;
+    white-space: nowrap;
+
+    &:hover {
+        background: ${props => props.theme.colors.primary};
+        color: white;
+        border-color: ${props => props.theme.colors.primary};
+    }
+
+    @media (max-width: 768px) {
+        width: 100%;
+        justify-content: center;
+    }
+`;
+
 interface NavigationProps {
     isOpen?: boolean;
     onClose?: () => void;
 }
 
-export default function Navigation({ isOpen: externalIsOpen, onClose }: NavigationProps) {
-    const { user, logout, isAuthenticated } = useAuth();
-    const { theme } = useTheme();
+export default function Navigation({isOpen: externalIsOpen, onClose}: NavigationProps) {
+    const {user, logout, isAuthenticated} = useAuth();
+    const {theme, toggleTheme} = useTheme();
     const navigate = useNavigate();
     const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -338,6 +364,11 @@ export default function Navigation({ isOpen: externalIsOpen, onClose }: Navigati
                             </NavLinks>
                         )}
 
+                        {/* Theme Toggle */}
+                        <ThemeToggle theme={theme} onClick={toggleTheme} title="Toggle Dark/Light mode">
+                            {theme.mode === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
+                        </ThemeToggle>
+
                         {isAuthenticated ? (
                             <ProfileDropdown>
                                 <ProfileButton
@@ -375,14 +406,14 @@ export default function Navigation({ isOpen: externalIsOpen, onClose }: Navigati
                                 <Button
                                     variant="secondary"
                                     onClick={() => handleNavigate('/login')}
-                                    style={{ whiteSpace: 'nowrap' }}
+                                    style={{whiteSpace: 'nowrap'}}
                                 >
                                     🔓 Login
                                 </Button>
                                 <Button
                                     variant="primary"
                                     onClick={() => handleNavigate('/register')}
-                                    style={{ whiteSpace: 'nowrap' }}
+                                    style={{whiteSpace: 'nowrap'}}
                                 >
                                     ✍️ Register
                                 </Button>
@@ -403,7 +434,7 @@ export default function Navigation({ isOpen: externalIsOpen, onClose }: Navigati
                 </NavWrapper>
             </NavContainer>
 
-            <Overlay isOpen={isOpen} onClick={() => setMobileMenuOpen(false)} />
+            <Overlay isOpen={isOpen} onClick={() => setMobileMenuOpen(false)}/>
         </>
     );
 }

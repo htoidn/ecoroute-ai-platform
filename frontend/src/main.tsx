@@ -7,7 +7,17 @@ import { ThemeProvider } from "./contexts/ThemeContext";
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
     <React.StrictMode>
-        <BrowserRouter basename="/ecoroute-ai-platform">
+        {
+            // Use Vite's BASE_URL (set at build time) so the router basename matches where the app is hosted.
+            // import.meta.env.BASE_URL will be '/' for root hosting and '/ecoroute-ai-platform/' for GH Pages.
+        }
+        <BrowserRouter
+            basename={(() => {
+                const base = (import.meta.env.BASE_URL as string) || '/';
+                if (base === '/') return '';
+                return base.replace(/\/$/, '');
+            })()}
+        >
             <ThemeProvider>
                 <AuthProvider>
                     <App />

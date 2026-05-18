@@ -398,14 +398,22 @@ export default function DestinationDetail() {
                         const curDest = res.data as Destination;
                         if (curDest) {
                             const currentTags = (curDest.tags || '').split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
-                            const relatedCandidates = dests.filter(d => d.id !== curDest.id);
+                            // Deduplicate destinations by name first
+                            const uniqueDests = new Map<string, Destination>();
+                            dests.forEach(d => {
+                                if (d.id !== curDest.id && !uniqueDests.has(d.name)) {
+                                    uniqueDests.set(d.name, d);
+                                }
+                            });
+
+                            const relatedCandidates = Array.from(uniqueDests.values());
                             const scoredRelated = relatedCandidates.map(d => {
                                 const tags = (d.tags || '').split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
                                 const shared = tags.filter(t => currentTags.includes(t)).length;
-                                const sameCountry = d.country === curDest.country ? 1 : 0;
-                                return {d, score: shared * 2 + sameCountry};
-                            }).filter(x => x.score > 0)
-                              .sort((a, b) => b.score - a.score || b.d.sustainabilityScore - a.d.sustainabilityScore)
+                                const sameCountry = d.country === curDest.country ? 2 : 0;
+                                const scoreDiff = Math.abs(d.sustainabilityScore - curDest.sustainabilityScore);
+                                return {d, score: (shared * 3 + sameCountry) - (scoreDiff / 10)};
+                            }).sort((a, b) => b.score - a.score || b.d.sustainabilityScore - a.d.sustainabilityScore)
                               .slice(0, 5)
                               .map(x => x.d);
 
@@ -462,24 +470,32 @@ export default function DestinationDetail() {
 
                 if (mounted) setTop5(top);
 
-                // compute related destinations if we have a current destination
-                if (mounted && destination) {
-                    const currentTags = (destination.tags || '').split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
-                    const relatedCandidates = dests.filter(d => d.id !== destination.id);
-                    const scoredRelated = relatedCandidates.map(d => {
-                        const tags = (d.tags || '').split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
-                        const shared = tags.filter(t => currentTags.includes(t)).length;
-                        const sameCountry = d.country === destination.country ? 1 : 0;
-                        return {d, score: shared * 2 + sameCountry};
-                    }).filter(x => x.score > 0)
-                      .sort((a, b) => b.score - a.score || b.d.sustainabilityScore - a.d.sustainabilityScore)
-                      .slice(0, 5)
-                      .map(x => x.d);
+                  // compute related destinations if we have a current destination
+                  if (mounted && destination) {
+                      const currentTags = (destination.tags || '').split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+                      // Deduplicate destinations by name first
+                      const uniqueDests = new Map<string, Destination>();
+                      dests.forEach(d => {
+                          if (d.id !== destination.id && !uniqueDests.has(d.name)) {
+                              uniqueDests.set(d.name, d);
+                          }
+                      });
 
-                    if (mounted) setRelated(scoredRelated);
-                } else {
-                    if (mounted) setRelated([]);
-                }
+                      const relatedCandidates = Array.from(uniqueDests.values());
+                      const scoredRelated = relatedCandidates.map(d => {
+                          const tags = (d.tags || '').split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+                          const shared = tags.filter(t => currentTags.includes(t)).length;
+                          const sameCountry = d.country === destination.country ? 2 : 0;
+                          const scoreDiff = Math.abs(d.sustainabilityScore - destination.sustainabilityScore);
+                          return {d, score: (shared * 3 + sameCountry) - (scoreDiff / 10)};
+                      }).sort((a, b) => b.score - a.score || b.d.sustainabilityScore - a.d.sustainabilityScore)
+                        .slice(0, 5)
+                        .map(x => x.d);
+
+                      if (mounted) setRelated(scoredRelated);
+                  } else {
+                      if (mounted) setRelated([]);
+                  }
             } catch (error) {
                 console.error('Failed to load destination/top/related data:', error);
                 if (mounted) {

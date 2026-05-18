@@ -1,6 +1,5 @@
 import {useEffect, useState} from 'react';
-import {useNotification} from '../contexts/NotificationContext';
-import {useNavigate} from 'react-router-dom';
+import {useSearchParams} from 'react-router-dom';
 import styled from 'styled-components';
 import {getAllDestinations, searchDestinations} from '../services/api';
 import {useTheme} from '../contexts/ThemeContext';
@@ -16,6 +15,7 @@ import {
     SearchContainer,
     SearchInput,
 } from '../styles/SharedStyles';
+import RouteCard from '../components/RouteCard';
 
 interface Destination {
     id: number;
@@ -154,27 +154,16 @@ const Tag = styled.span`
     font-weight: 500;
 `;
 
-const ActionButton = styled(Button)`
-    width: 100%;
-    margin-top: auto;
-    text-align: center;
-`;
-
 
 export default function Explore() {
     const {theme} = useTheme();
-    const navigate = useNavigate();
-    const {showToast} = useNotification();
+    const [searchParams] = useSearchParams();
     const [destinations, setDestinations] = useState<Destination[]>([]);
     const [filteredDestinations, setFilteredDestinations] = useState<Destination[]>([]);
     const [loading, setLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
     const [slideIndex, setSlideIndex] = useState(0);
 
-    const getDestinationId = (item: unknown): number | undefined => {
-        const i: any = item as any;
-        return i?.id ?? i?.destinationId ?? i?.destination_id ?? i?.Id ?? i?.destination?.id;
-    };
 
     useEffect(() => {
         let mounted = true;
@@ -184,7 +173,21 @@ export default function Explore() {
                 const response = await getAllDestinations();
                 if (!mounted) return;
                 setDestinations(response.data);
-                setFilteredDestinations(response.data);
+
+                // Apply search filter if search param exists
+                const searchQuery = searchParams.get('search');
+                if (searchQuery) {
+                    setSearchQuery(searchQuery);
+                    const filtered = response.data.filter(
+                        (dest: Destination) =>
+                            dest.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            dest.country.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            dest.description.toLowerCase().includes(searchQuery.toLowerCase())
+                    );
+                    setFilteredDestinations(filtered);
+                } else {
+                    setFilteredDestinations(response.data);
+                }
             } catch (error) {
                 console.error('Failed to load destinations:', error);
             } finally {
@@ -200,7 +203,7 @@ export default function Explore() {
             mounted = false;
             clearInterval(interval);
         };
-    }, []);
+    }, [searchParams]);
 
     const handleSearch = async (query: string) => {
         setSearchQuery(query);
@@ -255,6 +258,14 @@ export default function Explore() {
                     🔍 Search
                 </Button>
             </SearchContainer>
+
+            {/* Route Calculator */}
+            <div style={{margin: '2rem 0', padding: '2rem 0', borderRadius: '16px'}}>
+                <h2 style={{fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.5rem', color: theme.colors.text}}>
+                    🗺️ Plan Your Route
+                </h2>
+                <RouteCard startLat={51.5074} startLon={-0.1278} endLat={48.8566} endLon={2.3522}/>
+            </div>
 
             {loading ? (
                 <LoadingSpinner>
@@ -345,23 +356,6 @@ export default function Explore() {
                                         <div>🌡️ Avg Temp: {destination.avgTemp}°C</div>
                                         <div>🍂 Best: {destination.bestSeason}</div>
                                     </div>
-
-                                    <ActionButton
-                                        onClick={() => {
-                                            // Defensive id extraction - API may return different id field names in some responses
-                                            const destId = getDestinationId(destination);
-                                            if (destId === undefined || destId === null) {
-                                                // don't navigate with undefined id; show a user-friendly toast
-                                                console.warn('Attempted to navigate to destination with missing id', destination);
-                                                showToast('Destination id is missing for this item', 'error');
-                                                return;
-                                            }
-                                            navigate(`/destination/${destId}`);
-                                        }}
-                                        variant="primary"
-                                    >
-                                        View Details →
-                                    </ActionButton>
                                 </CardContent>
                             </DestinationCard>
                         ))}

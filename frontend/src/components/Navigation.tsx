@@ -83,8 +83,10 @@ const NavLinks = styled.div<{ isOpen: boolean; theme: ThemeType }>`
     }
 `;
 
-const NavLink = styled.a<{ theme: ThemeType; isActive?: boolean }>`
+const NavLink = styled.button<{ theme: ThemeType; isActive?: boolean }>`
     color: ${props => props.isActive ? props.theme.colors.primary : props.theme.colors.text};
+    background: none;
+    border: none;
     text-decoration: none;
     font-weight: ${props => props.isActive ? '700' : '500'};
     padding: 0.5rem 1rem;
@@ -92,6 +94,7 @@ const NavLink = styled.a<{ theme: ThemeType; isActive?: boolean }>`
     transition: all 0.3s ease;
     cursor: pointer;
     white-space: nowrap;
+    font-size: 1rem;
 
     &:hover {
         color: ${props => props.theme.colors.primary};
@@ -289,23 +292,18 @@ const ThemeToggle = styled.button<{ theme: any }>`
 `;
 
 interface NavigationProps {
-    isOpen?: boolean;
-    onClose?: () => void;
 }
 
-export default function Navigation({isOpen: externalIsOpen, onClose}: NavigationProps) {
+export default function Navigation({}: NavigationProps) {
     const {user, logout, isAuthenticated} = useAuth();
     const {theme, toggleTheme} = useTheme();
     const navigate = useNavigate();
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [dropdownOpen, setDropdownOpen] = useState(false);
-
-    const isOpen = externalIsOpen !== undefined ? externalIsOpen : mobileMenuOpen;
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     const handleNavigate = (path: string) => {
         navigate(path);
         setMobileMenuOpen(false);
-        onClose?.();
     };
 
     const handleLogout = () => {
@@ -320,7 +318,7 @@ export default function Navigation({isOpen: externalIsOpen, onClose}: Navigation
         setMobileMenuOpen(false);
     };
 
-    const currentPath = window.location.pathname;
+    const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
 
     return (
         <>
@@ -332,34 +330,34 @@ export default function Navigation({isOpen: externalIsOpen, onClose}: Navigation
 
                     <NavContent>
                         {isAuthenticated && (
-                            <NavLinks isOpen={isOpen} theme={theme}>
+                            <NavLinks isOpen={mobileMenuOpen} theme={theme}>
                                 <NavLink
                                     theme={theme}
                                     isActive={currentPath === '/'}
                                     onClick={() => handleNavigate('/')}
                                 >
-                                    🏠 Home
+                                    Home
                                 </NavLink>
                                 <NavLink
                                     theme={theme}
                                     isActive={currentPath === '/explore'}
                                     onClick={() => handleNavigate('/explore')}
                                 >
-                                    🗺️ Explore
+                                    Explore
                                 </NavLink>
                                 <NavLink
                                     theme={theme}
                                     isActive={currentPath === '/recommendations'}
                                     onClick={() => handleNavigate('/recommendations')}
                                 >
-                                    ⭐ Recommendations
+                                    Recommendations
                                 </NavLink>
                                 <NavLink
                                     theme={theme}
                                     isActive={currentPath === '/settings'}
                                     onClick={() => handleNavigate('/settings')}
                                 >
-                                    ⚙️ Settings
+                                    Settings
                                 </NavLink>
                             </NavLinks>
                         )}
@@ -420,21 +418,23 @@ export default function Navigation({isOpen: externalIsOpen, onClose}: Navigation
                             </AuthButtons>
                         )}
 
-                        <HamburgerMenu
-                            theme={theme}
-                            className={isOpen ? 'open' : ''}
-                            onClick={() => setMobileMenuOpen(!isOpen)}
-                            aria-label="Toggle menu"
-                        >
-                            <span></span>
-                            <span></span>
-                            <span></span>
-                        </HamburgerMenu>
+                        {isAuthenticated && (
+                            <HamburgerMenu
+                                theme={theme}
+                                className={mobileMenuOpen ? 'open' : ''}
+                                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                                aria-label="Toggle menu"
+                            >
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </HamburgerMenu>
+                        )}
                     </NavContent>
                 </NavWrapper>
             </NavContainer>
 
-            <Overlay isOpen={isOpen} onClick={() => setMobileMenuOpen(false)}/>
+            <Overlay isOpen={mobileMenuOpen} onClick={() => setMobileMenuOpen(false)}/>
         </>
     );
 }

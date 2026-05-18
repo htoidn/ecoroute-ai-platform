@@ -20,3 +20,20 @@ spring:
 ai:
   service:
     url: http://localhost:8000
+
+# External API Configuration
+external:
+  apis:
+    weather:
+      key: 4766ddbcdb35526a20b5208989901cd4
+      url: https://api.openweathermap.org/data/2.5/weather
+    route:
+      key: eyJvcmciOiI1YjNjZTM1OTc4NTExMTAwMDFjZjYyNDgiLCJpZCI6ImU1OWRiY2I0MzM2ZDRiMjE4ZGQ5NzYzMDUxZTAxMmI3IiwiaCI6Im11cm11cjY0In0=
+      url: https://api.openrouteservice.org/v2/directions/driving-car
+    carbon:
+      key: 1dT2YbJdz0AotSZWXsLQ
+      url: https://www.carboninterface.com/api/v1/estimates
+    geoapify:
+      key: 2aa4058c6b28481db60027ba82ac4531
+      url: https://api.geoapify.com/v2/places
+

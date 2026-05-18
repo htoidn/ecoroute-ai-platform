@@ -13,14 +13,17 @@ import {
     PageSubtitle,
     PageTitle,
 } from '../styles/SharedStyles';
+import EcoScoreCard from '../components/EcoScoreCard';
 
 interface Recommendation {
     id: number;
-    userId: number;
-    destinationId: number;
+    userId?: number;
+    destinationId?: number;
     aiScore: number;
     reason: string;
     createdAt?: string;
+    user?: { id: number; username?: string };
+    destination?: { id: number; name: string; country: string };
 }
 
 interface Destination {
@@ -390,7 +393,7 @@ export default function Recommendations() {
     const [activeTab, setActiveTab] = useState<'table' | 'chart'>('table');
     const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
     const [destinations, setDestinations] = useState<Map<number, Destination>>(new Map());
-    const [usersMap, setUsersMap] = useState<Map<number, {id:number; username?:string}>>(new Map());
+    const [usersMap, setUsersMap] = useState<Map<number, { id: number; username?: string }>>(new Map());
     const [loading, setLoading] = useState(true);
 
     const loadData = async () => {
@@ -424,8 +427,31 @@ export default function Recommendations() {
         loadData();
     }, []);
 
-    const getDestinationName = (destId: number) => {
-        return destinations.get(destId)?.name || `Destination ${destId}`;
+    const getDestinationId = (rec: Recommendation) => {
+        return rec.destination?.id ?? rec.destinationId ?? null;
+    };
+
+    const getUserId = (rec: Recommendation) => {
+        return rec.user?.id ?? rec.userId ?? null;
+    };
+
+    const getDestinationName = (rec: Recommendation) => {
+        const destId = getDestinationId(rec);
+        if (rec.destination?.name) return rec.destination.name;
+        if (destId && destinations.has(destId)) {
+            return destinations.get(destId)?.name || `Destination ${destId}`;
+        }
+        return `Destination ${destId || 'Unknown'}`;
+    };
+
+    const getUserInfo = (rec: Recommendation) => {
+        const userId = getUserId(rec);
+        if (rec.user?.username) return `User #${userId} (${rec.user.username})`;
+        if (userId && usersMap.has(userId)) {
+            const user = usersMap.get(userId);
+            return user?.username ? `User #${userId} (${user.username})` : `User #${userId}`;
+        }
+        return `User #${userId || 'Unknown'}`;
     };
 
     const getAverageScore = () => {
@@ -437,15 +463,18 @@ export default function Recommendations() {
         const destScores: { [key: number]: { name: string; count: number; avgScore: number } } = {};
 
         recommendations.forEach(rec => {
-            if (!destScores[rec.destinationId]) {
-                destScores[rec.destinationId] = {
-                    name: getDestinationName(rec.destinationId),
+            const destId = getDestinationId(rec);
+            if (!destId) return;
+
+            if (!destScores[destId]) {
+                destScores[destId] = {
+                    name: getDestinationName(rec),
                     count: 0,
                     avgScore: 0,
                 };
             }
-            destScores[rec.destinationId].count += 1;
-            destScores[rec.destinationId].avgScore += rec.aiScore;
+            destScores[destId].count += 1;
+            destScores[destId].avgScore += rec.aiScore;
         });
 
         return Object.values(destScores)
@@ -463,18 +492,29 @@ export default function Recommendations() {
         } = {};
 
         recommendations.forEach(rec => {
-            if (!destScores[rec.destinationId]) {
-                const dest = destinations.get(rec.destinationId);
-                destScores[rec.destinationId] = {
-                    id: rec.destinationId,
-                    name: dest?.name || getDestinationName(rec.destinationId),
-                    country: dest?.country || 'Unknown',
+            const destId = getDestinationId(rec);
+            if (!destId) return;
+
+            if (!destScores[destId]) {
+                let destName = rec.destination?.name;
+                let destCountry = rec.destination?.country;
+
+                if (!destName || !destCountry) {
+                    const dest = destinations.get(destId);
+                    destName = destName || dest?.name || `Destination ${destId}`;
+                    destCountry = destCountry || dest?.country || 'Unknown';
+                }
+
+                destScores[destId] = {
+                    id: destId,
+                    name: destName,
+                    country: destCountry,
                     count: 0,
                     avgScore: 0,
                 };
             }
-            destScores[rec.destinationId].count += 1;
-            destScores[rec.destinationId].avgScore += rec.aiScore;
+            destScores[destId].count += 1;
+            destScores[destId].avgScore += rec.aiScore;
         });
 
         return Object.values(destScores)
@@ -539,6 +579,14 @@ export default function Recommendations() {
                 </StatCard>
             </StatGrid>
 
+            {/* Eco Score Calculator */}
+            <div style={{margin: '2rem 0', padding: '2rem 0', borderRadius: '16px'}}>
+                <h2 style={{fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.5rem', color: theme.colors.text}}>
+                    ♻️ Carbon Sustainability Calculator
+                </h2>
+                <EcoScoreCard initialDistance={100} initialTransport="car"/>
+            </div>
+
             <TabContainer theme={theme}>
                 <Tab
                     active={activeTab === 'table'}
@@ -570,21 +618,21 @@ export default function Recommendations() {
                     </TableHead>
                     <tbody>
                     {recommendations.map((rec, index) => {
-                        const dest = destinations.get(rec.destinationId);
                         return (
                             <TableRow key={rec.id} theme={theme}>
                                 <ImageCell data-label="Image" theme={theme}>
-                                    <img src={`https://picsum.photos/60/40?random=${3000 + index}`} alt={dest?.name}/>
+                                    <img src={`https://picsum.photos/60/40?random=${3000 + index}`}
+                                         alt={getDestinationName(rec)}/>
                                 </ImageCell>
                                 <TableCell
                                     data-label="Destination"
                                     theme={theme}
                                     style={{fontWeight: 600}}
                                 >
-                                    {getDestinationName(rec.destinationId)}
+                                    {getDestinationName(rec)}
                                 </TableCell>
                                 <TableCell data-label="User ID" theme={theme}>
-                                    {usersMap.get(rec.userId)?.username ? `User #${rec.userId} (${usersMap.get(rec.userId)?.username})` : `User #${rec.userId}`}
+                                    {getUserInfo(rec)}
                                 </TableCell>
                                 <ScoreCell data-label="AI Score" theme={theme}>
                                     <Badge color="green">{rec.aiScore}/100</Badge>
@@ -594,10 +642,9 @@ export default function Recommendations() {
                                 </TableCell>
                                 <TableCell data-label="Action" theme={theme}>
                                     <ViewDetailsButton onClick={() => {
-                                        const destId = rec.destinationId ?? (rec as any)?.destination?.id;
+                                        const destId = getDestinationId(rec);
                                         if (destId === undefined || destId === null) {
                                             console.warn('Missing destination id for recommendation', rec);
-                                            // show user-friendly toast
                                             (showToast ?? (() => {
                                             }))('Destination id is missing for this recommendation', 'error');
                                             return;
@@ -719,8 +766,7 @@ export default function Recommendations() {
                                     <div>📊 Total Recs: {dest.count}</div>
                                 </DestinationScoresSmall>
                                 <ViewDetailsButtonSmall onClick={() => {
-                                    const dAny: any = dest as any;
-                                    const destId = dAny?.id ?? dAny?.destinationId ?? dAny?.destination_id ?? dAny?.Id;
+                                    const destId = dest?.id;
                                     if (destId === undefined || destId === null) {
                                         console.warn('Attempted to navigate to destination with missing id', dest);
                                         showToast('Destination id is missing for this item', 'error');

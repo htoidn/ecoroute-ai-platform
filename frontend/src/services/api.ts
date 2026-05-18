@@ -49,5 +49,44 @@ export const getAllUsersMap = async () => {
     return usersMap;
 };
 
+// External APIs Integration
+// Weather API calls
+export const getWeather = async (city: string) => {
+    return API.get(`/weather/${city}`);
+};
+
+// Route API calls
+export const getRoute = async (startLat: number, startLon: number, endLat: number, endLon: number) => {
+    return API.get(`/routes`, {
+        params: {
+            startLat,
+            startLon,
+            endLat,
+            endLon
+        }
+    });
+};
+
+// Tourism API calls
+export const getTourism = async (latitude: number, longitude: number, radius: number = 5) => {
+    return API.get(`/tourism`, {
+        params: {
+            latitude,
+            longitude,
+            radius
+        }
+    });
+};
+
+// Carbon Emissions API calls
+export const getCarbon = async (transportType: string, distance: number) => {
+    return API.get(`/carbon`, {
+        params: {
+            transportType,
+            distance
+        }
+    });
+};
+
 export default API;
 

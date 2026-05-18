@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import {getAllDestinations, getAllRecommendations, getAllUsers} from '../services/api';
 import {useTheme} from '../contexts/ThemeContext';
 import {Badge, Button, LoadingSpinner, PageContainer, SearchContainer, SearchInput,} from '../styles/SharedStyles';
+import WeatherCard from '../components/WeatherCard';
 
 interface Destination {
     id: number;
@@ -20,10 +21,12 @@ interface Destination {
 
 interface Recommendation {
     id: number;
-    userId: number;
-    destinationId: number;
+    userId?: number;
+    destinationId?: number;
     aiScore: number;
     reason: string;
+    user?: { id: number; username?: string };
+    destination?: { id: number; name: string; country: string };
 }
 
 const HeroSection = styled.div<{ backgroundIndex: number }>`
@@ -187,6 +190,7 @@ const ActionButton = styled(Button)`
     width: 100%;
 `;
 
+
 const EmptyMessage = styled.div`
     text-align: center;
     padding: 3rem 2rem;
@@ -203,17 +207,52 @@ const EmptyMessage = styled.div`
     }
 `;
 
+const SearchResultsSection = styled.div`
+    margin-bottom: 3rem;
+    padding: 2rem;
+    background: ${props => props.theme.colors.bgSecondary};
+    border-radius: 16px;
+    border: 2px solid ${props => props.theme.colors.primary};
+`;
+
+const SearchResultsTitle = styled.h3`
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: ${props => props.theme.colors.primary};
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    justify-content: space-between;
+`;
+
+const ClearButton = styled.button`
+    background: ${props => props.theme.colors.primary};
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+    }
+`;
+
 export default function Home() {
-     const {theme} = useTheme();
-      const navigate = useNavigate();
-     const [searchInput, setSearchInput] = useState('');
-     const [topDestinations, setTopDestinations] = useState<Destination[]>([]);
-     const [allDestinations, setAllDestinations] = useState<Destination[]>([]);
-     const [featuredRecommendations, setFeaturedRecommendations] = useState<any[]>([]);
-     const [loading, setLoading] = useState(true);
-     const [backgroundIndex, setBackgroundIndex] = useState(0);
-     const [searchResults, setSearchResults] = useState<Destination[]>([]);
-     const [hasSearched, setHasSearched] = useState(false);
+    const {theme} = useTheme();
+    const navigate = useNavigate();
+    const [searchInput, setSearchInput] = useState('');
+    const [topDestinations, setTopDestinations] = useState<Destination[]>([]);
+    const [featuredRecommendations, setFeaturedRecommendations] = useState<any[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [backgroundIndex, setBackgroundIndex] = useState(0);
+    const [searchResults, setSearchResults] = useState<Destination[]>([]);
+    const [hasSearched, setHasSearched] = useState(false);
 
     useEffect(() => {
         loadData();
@@ -228,81 +267,107 @@ export default function Home() {
         return () => clearInterval(interval);
     }, []);
 
-      const loadData = async () => {
-          setLoading(true);
-          try {
-              const [destsResponse, recsResponse, usersResponse] = await Promise.all([
-                  getAllDestinations(),
-                  getAllRecommendations(),
-                  getAllUsers(),
-              ]);
+    const loadData = async () => {
+        setLoading(true);
+        try {
+            const [destsResponse, recsResponse, usersResponse] = await Promise.all([
+                getAllDestinations(),
+                getAllRecommendations(),
+                getAllUsers(),
+            ]);
 
-              // Store all destinations for search
-              setAllDestinations(destsResponse.data);
 
-              // Create users map
-              const usersMap: { [key: number]: any } = {};
-              usersResponse.data.forEach((user: any) => {
-                  usersMap[user.id] = user;
-              });
+            // Create users map
+            const usersMap: { [key: number]: any } = {};
+            usersResponse.data.forEach((user: any) => {
+                usersMap[user.id] = user;
+            });
 
-              // Get top 8 destinations by sustainability score
-              const sorted = destsResponse.data
-                  .sort((a: Destination, b: Destination) => b.sustainabilityScore - a.sustainabilityScore)
-                  .slice(0, 8);
-              setTopDestinations(sorted);
+            // Get top 8 destinations by sustainability score, deduplicated by name.
+            // For duplicated names we pick the entry with the highest sustainabilityScore.
+            const bestByName = new Map<string, Destination>();
+            destsResponse.data.forEach((dest: Destination) => {
+                const existing = bestByName.get(dest.name);
+                if (!existing || (dest.sustainabilityScore ?? 0) > (existing.sustainabilityScore ?? 0)) {
+                    bestByName.set(dest.name, dest);
+                }
+            });
 
-             // Get top 8 recommendations with varied destinations and users
-             const topRecs = recsResponse.data
-                 .sort((a: Recommendation, b: Recommendation) => b.aiScore - a.aiScore)
-                 .slice(0, 8)
-                  .map((rec: Recommendation, index: number) => {
-                      const dest = destsResponse.data.find((d: Destination) => d.id === rec.destinationId);
-                      const user = usersMap[rec.userId];
-                      // Create a slightly varied and realistic AI score for display
-                      const base = rec.aiScore || 70;
-                      const factor = Math.min(0.98, 0.85 + (index * 0.02));
-                      const displayAiScore = Math.max(60, Math.round(base * factor));
-                      // Create a realistic cost in dollars with two decimals (scale slightly by index)
-                      const rawCost = (dest?.costIndex ?? 50) * (1 + index * 0.12);
-                      const displayCost = rawCost.toFixed(2);
+            const sorted = Array.from(bestByName.values())
+                .sort((a: Destination, b: Destination) => (b.sustainabilityScore ?? 0) - (a.sustainabilityScore ?? 0))
+                .slice(0, 8);
+            setTopDestinations(sorted);
 
-                      return {
-                          ...rec,
-                          destination: dest,
-                          user: user,
-                          imageId: 2000 + index, // Unique image ID for each card
-                          displayAiScore,
-                          displayCost,
-                      };
-                  });
-             setFeaturedRecommendations(topRecs);
-         } catch (error) {
-             console.error('Failed to load data:', error);
-         } finally {
-             setLoading(false);
-         }
-     };
+            // Get top 8 recommendations but ensure different destination ids (avoid duplicates caused by multiple recs for same city)
+            const seenDestIds = new Set<number>();
+            const sortedRecs = recsResponse.data
+                .sort((a: Recommendation, b: Recommendation) => (b.aiScore ?? 0) - (a.aiScore ?? 0));
 
-     const handleSearch = () => {
-         if (searchInput.trim()) {
-             const query = searchInput.toLowerCase();
-             // Find exact and partial matches
-             const matches = allDestinations.filter(dest =>
-                 dest.name.toLowerCase().includes(query) ||
-                 dest.country.toLowerCase().includes(query) ||
-                 dest.description.toLowerCase().includes(query)
-             );
-             // Sort by exact name match first
-             matches.sort((a, b) => {
-                 const aExact = a.name.toLowerCase() === query ? 0 : 1;
-                 const bExact = b.name.toLowerCase() === query ? 0 : 1;
-                 return aExact - bExact;
-             });
-             setSearchResults(matches);
-             setHasSearched(true);
-         }
-     };
+            const topRecsArr: any[] = [];
+            for (let i = 0; i < sortedRecs.length && topRecsArr.length < 8; i++) {
+                const rec = sortedRecs[i];
+                const destId = rec.destination?.id ?? rec.destinationId;
+                if (!destId) continue;
+                if (seenDestIds.has(destId)) continue;
+                seenDestIds.add(destId);
+
+                const dest = rec.destination || destsResponse.data.find((d: Destination) => d.id === destId);
+                const userId = rec.user?.id ?? rec.userId;
+                const user = userId ? (rec.user || usersMap[userId]) : null;
+
+                const index = topRecsArr.length;
+                const base = rec.aiScore || 70;
+                const factor = Math.min(0.98, 0.85 + (index * 0.02));
+                const displayAiScore = Math.max(60, Math.round(base * factor));
+                const rawCost = (dest?.costIndex ?? 50) * (1 + index * 0.12);
+                const displayCost = rawCost.toFixed(2);
+
+                topRecsArr.push({
+                    ...rec,
+                    destination: dest,
+                    user,
+                    imageId: 2000 + index,
+                    displayAiScore,
+                    displayCost,
+                });
+            }
+
+            setFeaturedRecommendations(topRecsArr);
+        } catch (error) {
+            console.error('Failed to load data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleSearch = () => {
+        if (searchInput.trim()) {
+            // Filter destinations locally - matching results first
+            const query = searchInput.toLowerCase();
+            const matches = topDestinations.filter(dest =>
+                dest.name.toLowerCase().includes(query) ||
+                dest.country.toLowerCase().includes(query) ||
+                dest.description.toLowerCase().includes(query)
+            );
+
+            // Separate matching and non-matching
+            const nonMatches = topDestinations.filter(dest =>
+                !dest.name.toLowerCase().includes(query) &&
+                !dest.country.toLowerCase().includes(query) &&
+                !dest.description.toLowerCase().includes(query)
+            );
+
+            // Show matching first, then others
+            setSearchResults([...matches, ...nonMatches]);
+            setHasSearched(true);
+        }
+    };
+
+    const handleClearSearch = () => {
+        setSearchInput('');
+        setHasSearched(false);
+        setSearchResults([]);
+    };
 
     if (loading) {
         return (
@@ -338,115 +403,96 @@ export default function Home() {
                 </SearchContainer>
             </HeroSection>
 
-             {/* Featured Recommendations */}
-             <Section>
-                 <SectionTitle>⭐ AI-Powered Recommendations</SectionTitle>
-                    {featuredRecommendations.length > 0 ? (
-                            <CardGrid>
-                                      {featuredRecommendations.map((rec) => (
-                                    <DestinationCard key={rec.id} theme={theme}>
-                                        <CardImage
-                                            src={`https://picsum.photos/400/300?random=${rec.imageId}`}
-                                            alt={`${rec.destination?.name} image`}
-                                        />
-                                        <CardContent>
-                                            <CardTitle>{rec.destination?.name}</CardTitle>
-                                            <CardSubtitle>
-                                                {rec.destination?.country} • 👤 User #{rec.user?.id ?? rec.userId}
-                                            </CardSubtitle>
-                                            <CardDescription>{rec.reason}</CardDescription>
+            {/* Search Results */}
+            {hasSearched && (
+                <SearchResultsSection theme={theme}>
+                    <SearchResultsTitle theme={theme}>
+                        🔍 Search Results for "{searchInput}"
+                        <ClearButton theme={theme} onClick={handleClearSearch}>
+                            Clear
+                        </ClearButton>
+                    </SearchResultsTitle>
+                    {searchResults.length > 0 ? (
+                        <CardGrid>
+                            {searchResults.map((dest, index) => (
+                                <DestinationCard key={dest.id} theme={theme}>
+                                    <CardImage
+                                        src={`https://picsum.photos/400/300?random=${dest.id + 500}`}
+                                        alt={`${dest.name} image`}
+                                    />
+                                    <CardContent>
+                                        <CardTitle>{dest.name}</CardTitle>
+                                        <CardSubtitle>{dest.country}</CardSubtitle>
+                                        <CardDescription>{dest.description}</CardDescription>
 
-                                            <div style={{marginBottom: '1rem'}}>
-                                                {/* show a realistic AI score percentage and varied scores per card */}
-                                                <Badge color="green">AI Score: {rec.displayAiScore ?? rec.aiScore}%</Badge>
-                                            </div>
+                                        <div style={{marginBottom: '1rem'}}>
+                                            <Badge color="green">
+                                                {index === 0 && searchResults.length > 0 && searchResults[0].name === dest.name ? '✓ Perfect Match!' : 'Match'}
+                                            </Badge>
+                                        </div>
 
-                                            <ScoreRow theme={theme}>
-                                                <div>♻️ Sustainability: {rec.destination?.sustainabilityScore}%</div>
-                                                <div>💶 Cost Index: ${rec.displayCost ?? (rec.destination?.costIndex ?? 0).toFixed?.(2)}</div>
-                                            </ScoreRow>
+                                        <ScoreRow theme={theme}>
+                                            <div>🌍 Sustainability: {dest.sustainabilityScore}%</div>
+                                            <div>💶 Cost: ${dest.costIndex}</div>
+                                        </ScoreRow>
+                                    </CardContent>
+                                </DestinationCard>
+                            ))}
+                        </CardGrid>
+                    ) : (
+                        <EmptyMessage theme={theme}>
+                            <div className="icon">🔍</div>
+                            <p>No destinations match your search</p>
+                        </EmptyMessage>
+                    )}
+                </SearchResultsSection>
+            )}
+            <Section>
+                <SectionTitle>⭐ AI-Powered Recommendations</SectionTitle>
+                {featuredRecommendations.length > 0 ? (
+                    <CardGrid>
+                        {featuredRecommendations.map((rec) => (
+                            <DestinationCard key={rec.id} theme={theme}>
+                                <CardImage
+                                    src={`https://picsum.photos/400/300?random=${rec.imageId}`}
+                                    alt={`${rec.destination?.name} image`}
+                                />
+                                <CardContent>
+                                    <CardTitle>{rec.destination?.name}</CardTitle>
+                                    <CardSubtitle>
+                                        {rec.destination?.country} • 👤 User #{rec.user?.id ?? rec.userId ?? 'N/A'}
+                                    </CardSubtitle>
+                                    <CardDescription>{rec.reason}</CardDescription>
 
-                                            <ActionButton onClick={() => navigate('/recommendations')}
-                                                          variant="primary">
-                                                View Details →
-                                            </ActionButton>
-                                        </CardContent>
-                                    </DestinationCard>
-                                ))}
-                            </CardGrid>
-                        ) : (
-                     <EmptyMessage theme={theme}>
-                         <div className="icon">🤖</div>
-                         <p>No recommendations available yet</p>
-                         <Button onClick={() => navigate('/explore')} variant="secondary">
-                             Explore Destinations
-                         </Button>
-                     </EmptyMessage>
-                 )}
-             </Section>
+                                    <div style={{marginBottom: '1rem'}}>
+                                        {/* show a realistic AI score percentage and varied scores per card */}
+                                        <Badge color="green">AI Score: {rec.displayAiScore ?? rec.aiScore}%</Badge>
+                                    </div>
 
-             {/* Search Results */}
-              {hasSearched && searchResults.length > 0 && (
-                  <Section>
-                      <SectionTitle>🔍 Search Results for "{searchInput}"</SectionTitle>
-                      {/* primary match displayed prominently */}
-                      {searchResults[0] && (
-                          <div style={{marginBottom: '1.25rem'}}>
-                              <DestinationCard key={`primary-${searchResults[0].id}`} theme={theme}>
-                                  <CardImage
-                                      src={`https://picsum.photos/800/300?random=${searchResults[0].id + 7000}`}
-                                      alt={`${searchResults[0].name} image`}
-                                  />
-                                  <CardContent>
-                                      <CardTitle>{searchResults[0].name}</CardTitle>
-                                      <CardSubtitle>{searchResults[0].country}</CardSubtitle>
-                                      <CardDescription>{searchResults[0].description}</CardDescription>
-                                      <div style={{marginBottom: '1rem'}}>
-                                          <Badge color="green">Sustainability: {searchResults[0].sustainabilityScore}/100</Badge>
-                                      </div>
-                                      <ScoreRow theme={theme}>
-                                          <div>🚌 Transport: {searchResults[0].publicTransportScore}%</div>
-                                          <div>💶 Cost: ${searchResults[0].costIndex.toFixed?.(2) ?? searchResults[0].costIndex}</div>
-                                      </ScoreRow>
-                                      <ActionButton onClick={() => navigate(`/destination/${searchResults[0].id}`)} variant="primary">View Details →</ActionButton>
-                                  </CardContent>
-                              </DestinationCard>
-                          </div>
-                      )}
+                                    <ScoreRow theme={theme}>
+                                        <div>♻️ Sustainability: {rec.destination?.sustainabilityScore}%</div>
+                                        <div>💶 Cost Index:
+                                            ${rec.displayCost ?? (rec.destination?.costIndex ?? 0).toFixed?.(2)}</div>
+                                    </ScoreRow>
 
-                      {/* the rest of the search matches */}
-                      {searchResults.length > 1 && (
-                          <div style={{marginTop: '1rem'}}>
-                              <CardGrid>
-                                  {searchResults.slice(1).map((dest, index) => (
-                                      <DestinationCard key={`${dest.id}-${index}`} theme={theme}>
-                                          <CardImage
-                                              src={`https://picsum.photos/400/300?random=${dest.id + 5000}`}
-                                              alt={`${dest.name} image`}
-                                          />
-                                          <CardContent>
-                                              <CardTitle>{dest.name}</CardTitle>
-                                              <CardSubtitle>{dest.country}</CardSubtitle>
-                                              <CardDescription>{dest.description}</CardDescription>
-
-                                              <div style={{marginBottom: '1rem'}}>
-                                                  <Badge color="green">Sustainability: {dest.sustainabilityScore}/100</Badge>
-                                              </div>
-
-                                              <ScoreRow theme={theme}>
-                                                  <div>🚌 Transport: {dest.publicTransportScore}%</div>
-                                                  <div>💶 Cost: ${dest.costIndex}</div>
-                                              </ScoreRow>
-
-                                              <ActionButton onClick={() => navigate(`/destination/${dest.id}`)} variant="primary">View Details →</ActionButton>
-                                          </CardContent>
-                                      </DestinationCard>
-                                  ))}
-                              </CardGrid>
-                          </div>
-                      )}
-                  </Section>
-              )}
+                                    <ActionButton onClick={() => navigate('/recommendations')}
+                                                  variant="primary">
+                                        View Details →
+                                    </ActionButton>
+                                </CardContent>
+                            </DestinationCard>
+                        ))}
+                    </CardGrid>
+                ) : (
+                    <EmptyMessage theme={theme}>
+                        <div className="icon">🤖</div>
+                        <p>No recommendations available yet</p>
+                        <Button onClick={() => navigate('/explore')} variant="secondary">
+                            Explore Destinations
+                        </Button>
+                    </EmptyMessage>
+                )}
+            </Section>
 
             {/* Top Eco-Friendly Destinations */}
             <Section>
@@ -488,6 +534,16 @@ export default function Home() {
                         <p>No destinations available yet</p>
                     </EmptyMessage>
                 )}
+            </Section>
+
+            {/* Weather Information */}
+            <Section>
+                <SectionTitle>🌤️ Travel Weather Information</SectionTitle>
+                <CardGrid style={{gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))'}}>
+                    <WeatherCard city="Berlin"/>
+                    <WeatherCard city="Frankfurt"/>
+                    <WeatherCard city="Munich"/>
+                </CardGrid>
             </Section>
 
             {/* Quick Stats */}

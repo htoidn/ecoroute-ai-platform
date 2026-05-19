@@ -342,13 +342,33 @@ export default function RecommendationDetail() {
 
                     if (rec && mounted) {
                         setRecommendation(rec);
-                        const [destResponse, userResponse] = await Promise.all([
-                            getDestinationById(rec.destinationId),
-                            getUserById(rec.userId),
-                        ]);
-                        if (mounted) {
-                            setDestination(destResponse.data);
-                            setUser(userResponse.data);
+
+                        // Resolve destination and user robustly: prefer numeric ids, fall
+                        // back to nested objects when present. Avoid calling the API
+                        // with undefined which caused requests like GET /users/undefined.
+                        const rawDestId = (rec as any).destinationId ?? (rec as any).destination?.id ?? null;
+                        const destIdNum = rawDestId !== null && rawDestId !== undefined ? Number(rawDestId) : null;
+
+                        const rawUserId = (rec as any).userId ?? (rec as any).user?.id ?? null;
+                        const userIdNum = rawUserId !== null && rawUserId !== undefined ? Number(rawUserId) : null;
+
+                        try {
+                            if (destIdNum !== null && !Number.isNaN(destIdNum)) {
+                                const destResponse = await getDestinationById(destIdNum);
+                                if (mounted) setDestination(destResponse.data);
+                            } else if ((rec as any).destination) {
+                                if (mounted) setDestination((rec as any).destination as Destination);
+                            }
+
+                            if (userIdNum !== null && !Number.isNaN(userIdNum)) {
+                                const userResponse = await getUserById(userIdNum);
+                                if (mounted) setUser(userResponse.data);
+                            } else if ((rec as any).user) {
+                                if (mounted) setUser((rec as any).user as User);
+                            }
+                        } catch (err) {
+                            console.warn('Failed to fetch destination/user for recommendation', err);
+                            // fallbacks handled above; nothing else to do here
                         }
                     }
                 }

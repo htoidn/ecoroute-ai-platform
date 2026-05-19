@@ -1,86 +1,124 @@
-version: '3.9'
-
 services:
 
   postgres:
     image: postgres:18
-
     container_name: ecoroute-postgres
-
+    restart: unless-stopped
     environment:
       POSTGRES_DB: ecoroute
       POSTGRES_USER: ecoroute_hdnh
       POSTGRES_PASSWORD: eco7ro1ute
-
     ports:
       - "5432:5432"
-
     volumes:
       - postgres_data:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ecoroute_hdnh"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ecoroute-network
 
   backend:
     build:
       context: ./backend
-
+      dockerfile: Dockerfile
     container_name: ecoroute-backend
-
+    restart: unless-stopped
+    # backend runs inside the container on port 8081 (configured in application.yml)
+    # map host 8080 -> container 8081 so external callers (frontend, host) use port 8080
     ports:
-      - "8080:8080"
-
+      - "8080:8081"
     depends_on:
-      - postgres
-      - ai-service
-
+      postgres:
+        condition: service_healthy
+      ai-service:
+        condition: service_healthy
     environment:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ecoroute
-      POSTGRES_USER: ecoroute_hdnh
-      POSTGRES_PASSWORD: eco7ro1ute
+      SPRING_DATASOURCE_USERNAME: ecoroute_hdnh
+      SPRING_DATASOURCE_PASSWORD: eco7ro1ute
       AI_SERVICE_URL: http://ai-service:8000
-      # Activate the 'local' Spring profile for local development so DataInitializer runs
       SPRING_PROFILES_ACTIVE: local
+      JAVA_OPTS: -Xmx512m -Xms256m
+    healthcheck:
+      # backend listens on 8081 inside the container; use that port for healthcheck
+      test: ["CMD", "curl", "-f", "http://localhost:8081/api/destinations"]
+      interval: 30s
+      timeout: 15s
+      retries: 5
+      start_period: 60s
+    networks:
+      - ecoroute-network
+    # profiles removed to ensure service is available for compose up
 
   frontend:
     build:
       context: ./frontend
-
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=production
     container_name: ecoroute-frontend
-
+    restart: unless-stopped
     ports:
       - "3000:80"
-
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
+    networks:
+      - ecoroute-network
+    environment:
+      - VITE_API_URL=http://localhost:8080
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
 
   ai-service:
     build:
       context: ./ai-service
-
+      dockerfile: Dockerfile
     container_name: ecoroute-ai-service
-
+    restart: unless-stopped
     ports:
       - "8000:8000"
+    networks:
+      - ecoroute-network
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    # profiles removed to ensure service is available for compose up
 
   pgadmin:
     image: dpage/pgadmin4:latest
-
     container_name: ecoroute-pgadmin
-
+    restart: unless-stopped
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@localhost.com
       PGADMIN_DEFAULT_PASSWORD: admin123
       PGADMIN_CONFIG_SERVER_MODE: 'False'
-
     ports:
       - "5050:80"
-
     depends_on:
-      - postgres
-
+      postgres:
+        condition: service_healthy
     volumes:
       - pgadmin_data:/var/lib/pgadmin
-      # Mount local config to force desktop/server-less mode so pgAdmin UI remains available without repeated logins in dev
       - ./docker/pgadmin/config_local.py:/pgadmin4/config_local.py:ro
+    networks:
+      - ecoroute-network
 
 volumes:
   postgres_data:
   pgadmin_data:
+
+networks:
+  ecoroute-network:
+    driver: bridge
+

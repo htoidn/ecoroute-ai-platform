@@ -1,6 +1,5 @@
 import {useEffect, useState} from 'react';
-import {useNotification} from '../contexts/NotificationContext';
-import {useNavigate} from 'react-router-dom';
+import {useSearchParams, useNavigate} from 'react-router-dom';
 import styled from 'styled-components';
 import {getAllDestinations, searchDestinations} from '../services/api';
 import {useTheme} from '../contexts/ThemeContext';
@@ -16,6 +15,10 @@ import {
     SearchContainer,
     SearchInput,
 } from '../styles/SharedStyles';
+import RouteCard from '../components/RouteCard';
+import EcoScoreCard from '../components/EcoScoreCard';
+import WeatherCard from '../components/WeatherCard';
+import { useLocalization } from '../contexts/LocalizationContext';
 
 interface Destination {
     id: number;
@@ -154,27 +157,45 @@ const Tag = styled.span`
     font-weight: 500;
 `;
 
-const ActionButton = styled(Button)`
+const ViewDetailsButton = styled.button`
     width: 100%;
-    margin-top: auto;
-    text-align: center;
+    padding: 0.75rem 1.5rem;
+    background: linear-gradient(135deg, #48bb78, #38a169);
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
+    }
+
+    &:active {
+        transform: translateY(0);
+    }
+
+    @media (max-width: 768px) {
+        padding: 0.6rem 1rem;
+        font-size: 0.85rem;
+    }
 `;
 
 
 export default function Explore() {
     const {theme} = useTheme();
+    const { t } = useLocalization();
     const navigate = useNavigate();
-    const {showToast} = useNotification();
+    const [searchParams] = useSearchParams();
     const [destinations, setDestinations] = useState<Destination[]>([]);
     const [filteredDestinations, setFilteredDestinations] = useState<Destination[]>([]);
     const [loading, setLoading] = useState(true);
-    const [searchQuery, setSearchQuery] = useState('');
+    const [searchQuery, setSearchQuery] = useState(searchParams.get('search') || '');
     const [slideIndex, setSlideIndex] = useState(0);
 
-    const getDestinationId = (item: unknown): number | undefined => {
-        const i: any = item as any;
-        return i?.id ?? i?.destinationId ?? i?.destination_id ?? i?.Id ?? i?.destination?.id;
-    };
 
     useEffect(() => {
         let mounted = true;
@@ -184,7 +205,21 @@ export default function Explore() {
                 const response = await getAllDestinations();
                 if (!mounted) return;
                 setDestinations(response.data);
-                setFilteredDestinations(response.data);
+
+                // Apply search filter if search param exists
+                const searchQuery = searchParams.get('search');
+                if (searchQuery) {
+                    setSearchQuery(searchQuery);
+                    const filtered = response.data.filter(
+                        (dest: Destination) =>
+                            dest.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            dest.country.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                            dest.description.toLowerCase().includes(searchQuery.toLowerCase())
+                    );
+                    setFilteredDestinations(filtered);
+                } else {
+                    setFilteredDestinations(response.data);
+                }
             } catch (error) {
                 console.error('Failed to load destinations:', error);
             } finally {
@@ -200,7 +235,7 @@ export default function Explore() {
             mounted = false;
             clearInterval(interval);
         };
-    }, []);
+    }, [searchParams]);
 
     const handleSearch = async (query: string) => {
         setSearchQuery(query);
@@ -237,16 +272,14 @@ export default function Explore() {
     return (
         <PageContainer theme={theme}>
             <PageHeader>
-                <PageTitle>🌍 Explore Eco-Friendly Destinations</PageTitle>
-                <PageSubtitle>
-                    Discover sustainable travel destinations across the globe. Find your perfect eco-friendly getaway.
-                </PageSubtitle>
+                <PageTitle>{t('explore.title')}</PageTitle>
+                <PageSubtitle>{t('explore.subtitle')}</PageSubtitle>
             </PageHeader>
 
             <SearchContainer>
                 <SearchInput
                     type="text"
-                    placeholder="Search destinations, countries, or tags..."
+                    placeholder={t('explore.search_placeholder')}
                     value={searchQuery}
                     onChange={(e) => handleSearch(e.target.value)}
                     theme={theme}
@@ -256,21 +289,51 @@ export default function Explore() {
                 </Button>
             </SearchContainer>
 
+            {/* Route Calculator */}
+            <div style={{margin: '2rem 0', padding: '2rem 0', borderRadius: '16px'}}>
+                <h2 style={{fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.5rem', color: theme.colors.text}}>
+                    {t('explore.plan_route')}
+                </h2>
+                <RouteCard startLat={51.5074} startLon={-0.1278} endLat={48.8566} endLon={2.3522}/>
+            </div>
+
+            {/* Eco Score Calculator */}
+            <div style={{margin: '2rem 0', padding: '2rem 0', borderRadius: '16px'}}>
+                <h2 style={{fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.5rem', color: theme.colors.text}}>
+                    ♻️ Carbon Footprint Analyzer
+                </h2>
+                <CardGrid style={{gridTemplateColumns: '1fr'}}>
+                    <EcoScoreCard initialDistance={100} initialTransport="car"/>
+                </CardGrid>
+            </div>
+
+            {/* Weather Information */}
+            <div style={{margin: '2rem 0', padding: '2rem 0', borderRadius: '16px'}}>
+                <h2 style={{fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.5rem', color: theme.colors.text}}>
+                    🌤️ Destination Weather
+                </h2>
+                <CardGrid style={{gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))'}}>
+                    <WeatherCard city="Berlin"/>
+                    <WeatherCard city="Frankfurt"/>
+                    <WeatherCard city="Munich"/>
+                </CardGrid>
+            </div>
+
             {loading ? (
                 <LoadingSpinner>
                     <div className="spinner"></div>
-                    <p>Loading eco-friendly destinations...</p>
+                    <p>{t('explore.loading')}</p>
                 </LoadingSpinner>
             ) : filteredDestinations.length === 0 ? (
                 <EmptyState>
                     <div className="icon">🌐</div>
-                    <h3>No destinations found</h3>
-                    <p>Try adjusting your search or explore our featured destinations.</p>
+                    <h3>{t('explore.no_destinations')}</h3>
+                    <p>{t('explore.no_results_help') ?? 'Try adjusting your search or explore our featured destinations.'}</p>
                 </EmptyState>
             ) : (
                 <>
                     <p style={{color: theme.colors.textSecondary, marginBottom: '1.5rem'}}>
-                        Found {filteredDestinations.length} destination{filteredDestinations.length !== 1 ? 's' : ''}
+                        {t('explore.found_destinations', { count: filteredDestinations.length })}
                     </p>
                     <CardGrid>
                         {filteredDestinations.map((destination, idx) => (
@@ -326,42 +389,29 @@ export default function Explore() {
                                         </ScoreItem>
                                     </ScoresContainer>
 
-                                    <TagsContainer>
-                                        {destination.tags?.split(',').slice(0, 3).map((tag, idx) => (
-                                            <Tag key={idx} theme={theme}>{tag.trim()}</Tag>
-                                        ))}
-                                    </TagsContainer>
+                                     <TagsContainer>
+                                         {destination.tags?.split(',').slice(0, 3).map((tag, idx) => (
+                                             <Tag key={idx} theme={theme}>{tag.trim()}</Tag>
+                                         ))}
+                                     </TagsContainer>
 
-                                    <div style={{
-                                        display: 'grid',
-                                        gridTemplateColumns: '1fr 1fr',
-                                        gap: '0.5rem',
-                                        fontSize: '0.85rem',
-                                        color: theme.colors.textSecondary,
-                                        marginBottom: '1rem'
-                                    }}>
-                                        <div>💶 Cost Index: {destination.costIndex.toFixed(0)}</div>
-                                        <div>👥 Crowd: {destination.crowdIndex.toFixed(0)}</div>
-                                        <div>🌡️ Avg Temp: {destination.avgTemp}°C</div>
-                                        <div>🍂 Best: {destination.bestSeason}</div>
-                                    </div>
+                                     <div style={{
+                                         display: 'grid',
+                                         gridTemplateColumns: '1fr 1fr',
+                                         gap: '0.5rem',
+                                         fontSize: '0.85rem',
+                                         color: theme.colors.textSecondary,
+                                         marginBottom: '1rem'
+                                     }}>
+                                         <div>💶 Cost Index: ${destination.costIndex.toFixed(2)}</div>
+                                         <div>👥 Crowd: {destination.crowdIndex.toFixed(0)}</div>
+                                         <div>🌡️ Avg Temp: {destination.avgTemp}°C</div>
+                                         <div>🍂 Best: {destination.bestSeason}</div>
+                                     </div>
 
-                                    <ActionButton
-                                        onClick={() => {
-                                            // Defensive id extraction - API may return different id field names in some responses
-                                            const destId = getDestinationId(destination);
-                                            if (destId === undefined || destId === null) {
-                                                // don't navigate with undefined id; show a user-friendly toast
-                                                console.warn('Attempted to navigate to destination with missing id', destination);
-                                                showToast('Destination id is missing for this item', 'error');
-                                                return;
-                                            }
-                                            navigate(`/destination/${destId}`);
-                                        }}
-                                        variant="primary"
-                                    >
-                                        View Details →
-                                    </ActionButton>
+                                     <ViewDetailsButton onClick={() => navigate(`/destination/${destination.id}`)}>
+                                         🔍 View Details →
+                                     </ViewDetailsButton>
                                 </CardContent>
                             </DestinationCard>
                         ))}

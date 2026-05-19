@@ -52,19 +52,34 @@ const Logo = styled.div`
 const NavContent = styled.div`
     display: flex;
     align-items: center;
-    gap: 2rem;
+    gap: 1.2rem;
+
+    @media (max-width: 1024px) {
+        gap: 0.8rem;
+    }
 
     @media (max-width: 768px) {
-        gap: 1rem;
+        gap: 0.5rem;
+    }
+`;
+
+
+const AuthNavButtonsContainer = styled.div`
+    display: flex;
+    gap: 0.6rem;
+    align-items: center;
+
+    @media (max-width: 1024px) {
+        display: none;
     }
 `;
 
 const NavLinks = styled.div<{ isOpen: boolean; theme: ThemeType }>`
     display: flex;
-    gap: 2rem;
+    gap: 0.6rem;
     align-items: center;
 
-    @media (max-width: 768px) {
+    @media (max-width: 1024px) {
         position: fixed;
         top: 60px;
         left: 0;
@@ -83,25 +98,34 @@ const NavLinks = styled.div<{ isOpen: boolean; theme: ThemeType }>`
     }
 `;
 
-const NavLink = styled.a<{ theme: ThemeType; isActive?: boolean }>`
-    color: ${props => props.isActive ? props.theme.colors.primary : props.theme.colors.text};
+const NavLink = styled.button<{ theme: ThemeType; isActive?: boolean }>`
+    color: ${props => props.isActive ? 'white' : props.theme.colors.text};
+    background: ${props => props.isActive 
+        ? 'linear-gradient(135deg, #48bb78, #38a169)' 
+        : props.theme.colors.bgSecondary};
+    border: 1px solid ${props => props.isActive ? props.theme.colors.primary : props.theme.colors.border};
     text-decoration: none;
-    font-weight: ${props => props.isActive ? '700' : '500'};
-    padding: 0.5rem 1rem;
+    font-weight: ${props => props.isActive ? '700' : '600'};
+    padding: 0.55rem 1.1rem;
     border-radius: 8px;
     transition: all 0.3s ease;
     cursor: pointer;
     white-space: nowrap;
+    font-size: 0.95rem;
 
     &:hover {
-        color: ${props => props.theme.colors.primary};
-        background: ${props => props.theme.colors.bgSecondary};
+        color: white;
+        background: linear-gradient(135deg, #48bb78, #38a169);
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(72, 187, 120, 0.3);
+        border-color: ${props => props.theme.colors.primary};
     }
 
     @media (max-width: 768px) {
         width: 100%;
         padding: 0.75rem;
         text-align: center;
+        font-size: 1rem;
     }
 `;
 
@@ -114,7 +138,7 @@ const HamburgerMenu = styled.button<{ theme: any }>`
     gap: 0.4rem;
     padding: 0.5rem;
 
-    @media (max-width: 768px) {
+    @media (max-width: 1024px) {
         display: flex;
     }
 
@@ -234,7 +258,7 @@ const DropdownItem = styled.button<{ theme: any; isDanger?: boolean }>`
 const Overlay = styled.div<{ isOpen: boolean }>`
     display: none;
 
-    @media (max-width: 768px) {
+    @media (max-width: 1024px) {
         display: ${props => props.isOpen ? 'block' : 'none'};
         position: fixed;
         top: 0;
@@ -289,23 +313,18 @@ const ThemeToggle = styled.button<{ theme: any }>`
 `;
 
 interface NavigationProps {
-    isOpen?: boolean;
-    onClose?: () => void;
 }
 
-export default function Navigation({isOpen: externalIsOpen, onClose}: NavigationProps) {
+export default function Navigation({}: NavigationProps) {
     const {user, logout, isAuthenticated} = useAuth();
     const {theme, toggleTheme} = useTheme();
     const navigate = useNavigate();
-    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
     const [dropdownOpen, setDropdownOpen] = useState(false);
-
-    const isOpen = externalIsOpen !== undefined ? externalIsOpen : mobileMenuOpen;
+    const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
     const handleNavigate = (path: string) => {
         navigate(path);
         setMobileMenuOpen(false);
-        onClose?.();
     };
 
     const handleLogout = () => {
@@ -320,7 +339,7 @@ export default function Navigation({isOpen: externalIsOpen, onClose}: Navigation
         setMobileMenuOpen(false);
     };
 
-    const currentPath = window.location.pathname;
+    const currentPath = typeof window !== 'undefined' ? window.location.pathname : '';
 
     return (
         <>
@@ -331,12 +350,15 @@ export default function Navigation({isOpen: externalIsOpen, onClose}: Navigation
                     </Logo>
 
                     <NavContent>
+
+                        {/* Authenticated Navigation Buttons - Visible on Desktop, Collapsible on Tablet/Mobile */}
                         {isAuthenticated && (
-                            <NavLinks isOpen={isOpen} theme={theme}>
+                            <AuthNavButtonsContainer>
                                 <NavLink
                                     theme={theme}
                                     isActive={currentPath === '/'}
                                     onClick={() => handleNavigate('/')}
+                                    title="Go to Home"
                                 >
                                     🏠 Home
                                 </NavLink>
@@ -344,6 +366,7 @@ export default function Navigation({isOpen: externalIsOpen, onClose}: Navigation
                                     theme={theme}
                                     isActive={currentPath === '/explore'}
                                     onClick={() => handleNavigate('/explore')}
+                                    title="Explore destinations"
                                 >
                                     🗺️ Explore
                                 </NavLink>
@@ -351,6 +374,7 @@ export default function Navigation({isOpen: externalIsOpen, onClose}: Navigation
                                     theme={theme}
                                     isActive={currentPath === '/recommendations'}
                                     onClick={() => handleNavigate('/recommendations')}
+                                    title="View recommendations"
                                 >
                                     ⭐ Recommendations
                                 </NavLink>
@@ -358,10 +382,11 @@ export default function Navigation({isOpen: externalIsOpen, onClose}: Navigation
                                     theme={theme}
                                     isActive={currentPath === '/settings'}
                                     onClick={() => handleNavigate('/settings')}
+                                    title="Settings"
                                 >
                                     ⚙️ Settings
                                 </NavLink>
-                            </NavLinks>
+                            </AuthNavButtonsContainer>
                         )}
 
                         {/* Theme Toggle */}
@@ -420,21 +445,57 @@ export default function Navigation({isOpen: externalIsOpen, onClose}: Navigation
                             </AuthButtons>
                         )}
 
-                        <HamburgerMenu
-                            theme={theme}
-                            className={isOpen ? 'open' : ''}
-                            onClick={() => setMobileMenuOpen(!isOpen)}
-                            aria-label="Toggle menu"
-                        >
-                            <span></span>
-                            <span></span>
-                            <span></span>
-                        </HamburgerMenu>
+                        {isAuthenticated && (
+                            <HamburgerMenu
+                                theme={theme}
+                                className={mobileMenuOpen ? 'open' : ''}
+                                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                                aria-label="Toggle menu"
+                            >
+                                <span></span>
+                                <span></span>
+                                <span></span>
+                            </HamburgerMenu>
+                        )}
+
+                        {/* Mobile Menu - Shows when hamburger is clicked */}
+                        {isAuthenticated && mobileMenuOpen && (
+                            <NavLinks isOpen={mobileMenuOpen} theme={theme}>
+                                <NavLink
+                                    theme={theme}
+                                    isActive={currentPath === '/'}
+                                    onClick={() => handleNavigate('/')}
+                                >
+                                    🏠 Home
+                                </NavLink>
+                                <NavLink
+                                    theme={theme}
+                                    isActive={currentPath === '/explore'}
+                                    onClick={() => handleNavigate('/explore')}
+                                >
+                                    🗺️ Explore
+                                </NavLink>
+                                <NavLink
+                                    theme={theme}
+                                    isActive={currentPath === '/recommendations'}
+                                    onClick={() => handleNavigate('/recommendations')}
+                                >
+                                    ⭐ Recommendations
+                                </NavLink>
+                                <NavLink
+                                    theme={theme}
+                                    isActive={currentPath === '/settings'}
+                                    onClick={() => handleNavigate('/settings')}
+                                >
+                                    ⚙️ Settings
+                                </NavLink>
+                            </NavLinks>
+                        )}
                     </NavContent>
                 </NavWrapper>
             </NavContainer>
 
-            <Overlay isOpen={isOpen} onClick={() => setMobileMenuOpen(false)}/>
+            <Overlay isOpen={mobileMenuOpen} onClick={() => setMobileMenuOpen(false)}/>
         </>
     );
 }

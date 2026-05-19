@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<testsuites name="vitest tests" tests="13" failures="0" errors="0" time="0.245838167">
+    <testsuite name="src/pages/__tests__/DestinationDetail.test.tsx" timestamp="2026-05-19T16:28:24.388Z" hostname="simsaginra.local" tests="1" failures="0" errors="0" skipped="0" time="0.24114625">
+        <testcase classname="src/pages/__tests__/DestinationDetail.test.tsx" name="DestinationDetail &gt; renders related destinations and top5" time="0.239241167">
+        </testcase>
+    </testsuite>
+    <testsuite name="src/pages/__tests__/recommendationHelpers.test.tsx" timestamp="2026-05-19T16:28:24.389Z" hostname="simsaginra.local" tests="12" failures="0" errors="0" skipped="0" time="0.004691917">
+        <testcase classname="src/pages/__tests__/recommendationHelpers.test.tsx" name="recommendationHelpers &gt; getDestinationId &gt; returns numeric id when destinationId is a number" time="0.001477583">
+        </testcase>
+        <testcase classname="src/pages/__tests__/recommendationHelpers.test.tsx" name="recommendationHelpers &gt; getDestinationId &gt; parses numeric id when destinationId is a string" time="0.000135208">
+        </testcase>
+        <testcase classname="src/pages/__tests__/recommendationHelpers.test.tsx" name="recommendationHelpers &gt; getDestinationId &gt; uses nested destination.id when present" time="0.000099959">
+        </testcase>
+        <testcase classname="src/pages/__tests__/recommendationHelpers.test.tsx" name="recommendationHelpers &gt; getDestinationId &gt; returns null for missing id" time="0.000162084">
+        </testcase>
+        <testcase classname="src/pages/__tests__/recommendationHelpers.test.tsx" name="recommendationHelpers &gt; getDestinationId &gt; returns null for non-numeric id" time="0.000222292">
+        </testcase>
+        <testcase classname="src/pages/__tests__/recommendationHelpers.test.tsx" name="recommendationHelpers &gt; getUserId &gt; returns numeric id when userId is a number" time="0.0001765">
+        </testcase>
+        <testcase classname="src/pages/__tests__/recommendationHelpers.test.tsx" name="recommendationHelpers &gt; getUserId &gt; parses numeric id when userId is a string" time="0.000109458">
+        </testcase>
+        <testcase classname="src/pages/__tests__/recommendationHelpers.test.tsx" name="recommendationHelpers &gt; getUserId &gt; uses nested user.id when present" time="0.000105542">
+        </testcase>
+        <testcase classname="src/pages/__tests__/recommendationHelpers.test.tsx" name="recommendationHelpers &gt; getUserId &gt; returns null for missing id" time="0.000111209">
+        </testcase>
+        <testcase classname="src/pages/__tests__/recommendationHelpers.test.tsx" name="recommendationHelpers &gt; getUserId &gt; returns null for non-numeric id" time="0.000132125">
+        </testcase>
+        <testcase classname="src/pages/__tests__/recommendationHelpers.test.tsx" name="recommendationHelpers &gt; getTop5DestinationsByAIScore &gt; computes averages, uses destinations map for names/countries and sorts by avgScore" time="0.000434375">
+        </testcase>
+        <testcase classname="src/pages/__tests__/recommendationHelpers.test.tsx" name="recommendationHelpers &gt; getTop5DestinationsByAIScore &gt; falls back to recommendation-provided destination.name/country when map missing" time="0.000144625">
+        </testcase>
+    </testsuite>
+</testsuites>

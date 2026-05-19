@@ -1,7 +1,11 @@
 import {useState} from 'react';
+import {useNavigate} from 'react-router-dom';
 import styled from 'styled-components';
 import {useTheme} from '../contexts/ThemeContext';
+import {useLocalization, type Language} from '../contexts/LocalizationContext';
+import {useAuth} from '../contexts/AuthContext';
 import {Button, PageContainer, PageHeader, PageSubtitle, PageTitle,} from '../styles/SharedStyles';
+import {exportUserDataToPDF, deleteUserAccount, fetchUserDataForExport} from '../services/dataExport';
 
 const SettingsGrid = styled.div`
     display: grid;
@@ -199,6 +203,9 @@ const InfoMessage = styled.div`
 
 export default function Settings() {
     const {theme, toggleTheme} = useTheme();
+    const {language, setLanguage, t} = useLocalization();
+    const {user} = useAuth();
+    const navigate = useNavigate();
     const [settings, setSettings] = useState(() => {
         const saved = localStorage.getItem('user-settings');
         return saved ? JSON.parse(saved) : {
@@ -214,6 +221,10 @@ export default function Settings() {
         };
     });
 
+    const [isExporting, setIsExporting] = useState(false);
+    const [isDeleting, setIsDeleting] = useState(false);
+    const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
     const handleToggle = (key: string, value: boolean) => {
         const updated = {...settings, [key]: value};
         setSettings(updated);
@@ -223,6 +234,11 @@ export default function Settings() {
     const handleChange = (key: string, value: string | boolean) => {
         const updated = {...settings, [key]: value};
         setSettings(updated);
+
+        // If language changed, update localization
+        if (key === 'language') {
+            setLanguage(value as Language);
+        }
     };
 
     const handleSave = () => {
@@ -238,19 +254,86 @@ export default function Settings() {
         toggleTheme();
     };
 
+    const handleExportData = async () => {
+        // Get user ID from localStorage or URL
+        let userId = (user as any)?.id;
+        if (!userId) {
+            const savedUser = localStorage.getItem('user');
+            if (savedUser) {
+                try {
+                    const userData = JSON.parse(savedUser);
+                    userId = userData.id;
+                } catch {
+                    // continue
+                }
+            }
+        }
+
+        if (!userId) {
+            alert('User ID not found. Please log in again.');
+            return;
+        }
+
+        setIsExporting(true);
+        try {
+            const data = await fetchUserDataForExport(userId);
+            await exportUserDataToPDF(data.user, data.recommendations);
+            alert(t('data.export_success'));
+        } catch (error) {
+            console.error('Export error:', error);
+            alert(`Error: ${(error as Error).message}`);
+        } finally {
+            setIsExporting(false);
+        }
+    };
+
+    const handleDeleteAccount = async () => {
+        // Get user ID from localStorage or URL
+        let userId = (user as any)?.id;
+        if (!userId) {
+            const savedUser = localStorage.getItem('user');
+            if (savedUser) {
+                try {
+                    const userData = JSON.parse(savedUser);
+                    userId = userData.id;
+                } catch {
+                    // continue
+                }
+            }
+        }
+
+        if (!userId) {
+            alert('User ID not found. Please log in again.');
+            return;
+        }
+
+        setIsDeleting(true);
+        try {
+            await deleteUserAccount(userId);
+            alert(t('data.delete_success'));
+            navigate('/login');
+        } catch (error) {
+            console.error('Delete error:', error);
+            alert(`${t('data.delete_error')}: ${(error as Error).message}`);
+        } finally {
+            setIsDeleting(false);
+            setShowDeleteConfirm(false);
+        }
+    };
+
     return (
         <PageContainer theme={theme}>
             <PageHeader>
-                <PageTitle>⚙️ Settings & Preferences</PageTitle>
+                <PageTitle>⚙️ {t('settings.title')}</PageTitle>
                 <PageSubtitle>
-                    Customize your EcoRoute experience and optimize your eco-friendly travel recommendations
+                    {t('settings.subtitle')}
                 </PageSubtitle>
             </PageHeader>
 
             <SettingsGrid theme={theme}>
                 {/* Theme Settings */}
                 <SettingCard theme={theme}>
-                    <h3>🌓 Appearance</h3>
+                    <h3>🌓 {t('settings.appearance')}</h3>
                     <p>Choose between light and dark mode for comfortable viewing at any time of day.</p>
 
                     <RadioGroup>
@@ -262,7 +345,7 @@ export default function Settings() {
                                 checked={theme.mode === 'light'}
                                 onChange={(e) => handleThemeChange(e.target.value as 'light' | 'dark')}
                             />
-                            <span>☀️ Light Mode</span>
+                            <span>☀️ {t('settings.light_mode')}</span>
                         </RadioButton>
                         <RadioButton theme={theme}>
                             <input
@@ -272,19 +355,19 @@ export default function Settings() {
                                 checked={theme.mode === 'dark'}
                                 onChange={(e) => handleThemeChange(e.target.value as 'light' | 'dark')}
                             />
-                            <span>🌙 Dark Mode</span>
+                            <span>🌙 {t('settings.dark_mode')}</span>
                         </RadioButton>
                     </RadioGroup>
                 </SettingCard>
 
                 {/* Notification Settings */}
                 <SettingCard theme={theme}>
-                    <h3>🔔 Notifications</h3>
+                    <h3>🔔 {t('settings.notifications')}</h3>
                     <p>Manage how you receive updates about destinations and recommendations.</p>
 
                     <ControlRow>
                         <div style={{flex: 1}}>
-                            <span style={{color: theme.colors.text, fontWeight: 500}}>Push Notifications</span>
+                            <span style={{color: theme.colors.text, fontWeight: 500}}>{t('settings.push_notifications')}</span>
                             <p style={{fontSize: '0.85rem', margin: '0.25rem 0 0 0'}}>Get notified about new
                                 recommendations</p>
                         </div>
@@ -296,7 +379,7 @@ export default function Settings() {
 
                     <ControlRow>
                         <div style={{flex: 1}}>
-                            <span style={{color: theme.colors.text, fontWeight: 500}}>Email Notifications</span>
+                            <span style={{color: theme.colors.text, fontWeight: 500}}>{t('settings.email_notifications')}</span>
                             <p style={{fontSize: '0.85rem', margin: '0.25rem 0 0 0'}}>Weekly eco-destination updates</p>
                         </div>
                         <ToggleSwitch
@@ -308,8 +391,8 @@ export default function Settings() {
 
                 {/* Language Settings */}
                 <SettingCard theme={theme}>
-                    <h3>🌐 Language & Localization</h3>
-                    <p>Select your preferred language and local SEO region for destination recommendations.</p>
+                    <h3>🌐 {t('settings.language_localization')}</h3>
+                    <p>{t('settings.select_language')}</p>
 
                     <div style={{marginBottom: '1rem'}}>
                         <label style={{
@@ -319,10 +402,10 @@ export default function Settings() {
                             marginBottom: '0.5rem',
                             color: theme.colors.text
                         }}>
-                            Language
+                            {t('general.language')}
                         </label>
                         <Select
-                            value={settings.language}
+                            value={language}
                             onChange={(e) => handleChange('language', e.target.value)}
                             theme={theme}
                         >
@@ -342,7 +425,7 @@ export default function Settings() {
                             marginBottom: '0.5rem',
                             color: theme.colors.text
                         }}>
-                            📍 Interested Regions (For Local SEO)
+                            📍 {t('settings.interested_regions')}
                         </label>
                         <Input
                             type="text"
@@ -465,20 +548,63 @@ export default function Settings() {
 
                 {/* Privacy & Data */}
                 <SettingCard theme={theme}>
-                    <h3>🔒 Privacy & Data</h3>
+                    <h3>🔒 {t('settings.privacy_data')}</h3>
                     <p>
                         We take your privacy seriously. Your data is encrypted and never shared with third parties
                         without your consent.
                     </p>
 
                     <div style={{display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '1rem'}}>
-                        <Button onClick={() => alert('Coming soon: Export your data')} variant="outline">
-                            📥 Export My Data
+                        <Button
+                            onClick={handleExportData}
+                            variant="outline"
+                            disabled={isExporting}
+                        >
+                            {isExporting ? '⏳ Exporting...' : `📥 ${t('settings.export_data')}`}
                         </Button>
-                        <Button onClick={() => alert('Coming soon: Delete account')} variant="outline">
-                            🗑️ Delete Account
+                        <Button
+                            onClick={() => setShowDeleteConfirm(true)}
+                            variant="outline"
+                            disabled={isDeleting}
+                            style={{color: '#dc2626'}}
+                        >
+                            {isDeleting ? '⏳ Deleting...' : `🗑️ ${t('settings.delete_account')}`}
                         </Button>
                     </div>
+
+                    {showDeleteConfirm && (
+                        <div style={{
+                            padding: '1rem',
+                            background: '#fee2e2',
+                            border: '1px solid #fecaca',
+                            borderRadius: '8px',
+                            marginTop: '1rem'
+                        }}>
+                            <p style={{
+                                color: '#991b1b',
+                                marginBottom: '1rem',
+                                fontWeight: 600
+                            }}>
+                                ⚠️ {t('data.delete_confirm')}
+                            </p>
+                            <div style={{display: 'flex', gap: '0.75rem'}}>
+                                <Button
+                                    onClick={handleDeleteAccount}
+                                    variant="primary"
+                                    disabled={isDeleting}
+                                    style={{background: '#dc2626'}}
+                                >
+                                    {isDeleting ? 'Deleting...' : 'Yes, Delete'}
+                                </Button>
+                                <Button
+                                    onClick={() => setShowDeleteConfirm(false)}
+                                    variant="secondary"
+                                >
+                                    Cancel
+                                </Button>
+                            </div>
+                        </div>
+                    )}
 
                     <InfoMessage>
                         <strong>Data Usage:</strong> Your travel preferences help us provide better recommendations
@@ -489,13 +615,13 @@ export default function Settings() {
 
             <ButtonGroup style={{marginTop: '2rem'}}>
                 <Button onClick={handleSave} variant="primary">
-                    💾 Save All Settings
+                    💾 {t('settings.save_all')}
                 </Button>
                 <Button
                     onClick={() => window.location.reload()}
                     variant="secondary"
                 >
-                    🔄 Reset
+                    🔄 {t('settings.reset')}
                 </Button>
             </ButtonGroup>
 

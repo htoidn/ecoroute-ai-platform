@@ -4,6 +4,7 @@ import styled from 'styled-components';
 import {getDestinationById, getAllRecommendations, getAllDestinations} from '../services/api';
 import {useTheme} from '../contexts/ThemeContext';
 import { useNotification } from '../contexts/NotificationContext';
+import { useLocalization } from '../contexts/LocalizationContext';
 import {Badge, EmptyState, LoadingSpinner} from '../styles/SharedStyles';
 
 interface Destination {
@@ -37,6 +38,31 @@ interface TopDest {
     country: string;
     avgScore: number;
     count: number;
+    // include a few destination fields so the Top-5 cards can display richer data
+    sustainabilityScore?: number;
+    costIndex?: number;
+    publicTransportScore?: number;
+    crowdIndex?: number;
+    description?: string;
+}
+
+// small helpers to avoid `any` casts and normalize recommendation fields
+export function normalizeDestinationId(rec: unknown): number | null {
+    if (!rec || typeof rec !== 'object') return null;
+    const obj = rec as Record<string, unknown>;
+    const nested = obj['destination'] && typeof obj['destination'] === 'object' ? (obj['destination'] as Record<string, unknown>)['id'] : undefined;
+    const raw = obj['destinationId'] ?? nested;
+    if (raw === null || raw === undefined) return null;
+    const n = Number(raw as unknown as string | number);
+    return Number.isNaN(n) ? null : n;
+}
+
+export function getAiScore(rec: unknown): number {
+    if (!rec || typeof rec !== 'object') return 0;
+    const obj = rec as Record<string, unknown>;
+    const raw = obj['aiScore'] ?? obj['ai_score'];
+    const n = Number(raw as unknown as string | number);
+    return Number.isNaN(n) ? 0 : n;
 }
 
 const Container = styled.div`
@@ -342,10 +368,13 @@ export default function DestinationDetail() {
     const navigate = useNavigate();
     const {theme} = useTheme();
     const { showToast } = useNotification();
+    const { t } = useLocalization();
     const [destination, setDestination] = useState<Destination | null>(null);
     const [loading, setLoading] = useState(true);
     const [top5, setTop5] = useState<TopDest[]>([]);
     const [related, setRelated] = useState<Destination[]>([]);
+    const [loadingTop, setLoadingTop] = useState(true);
+    const [loadingRelated, setLoadingRelated] = useState(true);
 
     // Effect 1: fetch destination for the given `id` and set `destination` state
     useEffect(() => {
@@ -366,29 +395,46 @@ export default function DestinationDetail() {
 
                     // also eagerly load top5 and related right after fetching the destination
                     try {
+                        setLoadingTop(true);
+                        setLoadingRelated(true);
                         const [recsResp, destsResp] = await Promise.all([getAllRecommendations(), getAllDestinations()]);
                         const recs: Recommendation[] = recsResp.data;
                         const dests: Destination[] = destsResp.data;
 
-                        // compute top 5 by avg ai score
-                        const scores: {[key: number]: {id: number; name: string; country: string; count: number; total: number}} = {};
+                        // compute top 5 by avg ai score (normalize ids)
+                        const scores: {[key: number]: {id: number; name: string; country: string; count: number; total: number; dest?: Destination}} = {};
                         recs.forEach(r => {
-                            if (!scores[r.destinationId]) {
-                                const d = dests.find(dd => dd.id === r.destinationId);
-                                scores[r.destinationId] = {
-                                    id: r.destinationId,
-                                    name: d?.name || `Destination ${r.destinationId}`,
+                            const destIdNum = normalizeDestinationId(r);
+                            if (destIdNum === null) return;
+
+                            if (!scores[destIdNum]) {
+                                const d = dests.find(dd => dd.id === destIdNum);
+                                scores[destIdNum] = {
+                                    id: destIdNum,
+                                    name: d?.name || `Destination ${destIdNum}`,
                                     country: d?.country || 'Unknown',
                                     count: 0,
                                     total: 0,
+                                    dest: d,
                                 };
                             }
-                            scores[r.destinationId].count += 1;
-                            scores[r.destinationId].total += r.aiScore;
+                            scores[destIdNum].count += 1;
+                            scores[destIdNum].total += getAiScore(r);
                         });
 
                         const top = Object.values(scores)
-                            .map(s => ({id: s.id, name: s.name, country: s.country, avgScore: s.total / s.count, count: s.count}))
+                            .map(s => ({
+                                id: s.id,
+                                name: s.name,
+                                country: s.country,
+                                avgScore: s.total / s.count,
+                                count: s.count,
+                                sustainabilityScore: s.dest?.sustainabilityScore,
+                                costIndex: s.dest?.costIndex,
+                                publicTransportScore: s.dest?.publicTransportScore,
+                                crowdIndex: s.dest?.crowdIndex,
+                                description: s.dest?.description,
+                            }))
                             .sort((a, b) => b.avgScore - a.avgScore)
                             .slice(0, 5);
 
@@ -398,21 +444,54 @@ export default function DestinationDetail() {
                         const curDest = res.data as Destination;
                         if (curDest) {
                             const currentTags = (curDest.tags || '').split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
-                            const relatedCandidates = dests.filter(d => d.id !== curDest.id);
-                            const scoredRelated = relatedCandidates.map(d => {
-                                const tags = (d.tags || '').split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
-                                const shared = tags.filter(t => currentTags.includes(t)).length;
-                                const sameCountry = d.country === curDest.country ? 1 : 0;
-                                return {d, score: shared * 2 + sameCountry};
-                            }).filter(x => x.score > 0)
-                              .sort((a, b) => b.score - a.score || b.d.sustainabilityScore - a.d.sustainabilityScore)
-                              .slice(0, 5)
-                              .map(x => x.d);
+                            // Filter destinations excluding current one and deduplicate
+                            const uniqueDests = new Map<number, Destination>();
+                            dests.forEach(d => {
+                                if (d.id !== curDest.id && !uniqueDests.has(d.id)) {
+                                    uniqueDests.set(d.id, d);
+                                }
+                            });
 
-                            if (mounted) setRelated(scoredRelated);
+                                const computeRelated = (candidates: Destination[], reference: Destination, limit = 5) => {
+                                    // Score and rank candidates by shared tags, country, cost similarity, and sustainability distance.
+                                    const scored = candidates.map(d => {
+                                        const tags = (d.tags || '').split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+                                        const shared = tags.filter(t => currentTags.includes(t)).length;
+                                        const sameCountry = d.country === reference.country ? 3 : 0;
+                                        const scoreDiff = Math.abs((d.sustainabilityScore || 0) - (reference.sustainabilityScore || 0));
+                                        const costSimilarity = Math.abs((d.costIndex || 0) - (reference.costIndex || 0)) < 20 ? 1 : 0;
+                                        const finalScore = (shared * 3 + sameCountry + costSimilarity) - (scoreDiff / 20);
+                                        return {d, score: finalScore};
+                                    }).sort((a, b) => (b.score - a.score) || ((b.d.sustainabilityScore || 0) - (a.d.sustainabilityScore || 0)));
+
+                                    // Deduplicate strictly by id to avoid returning the same destination multiple times.
+                                    const seen = new Set<number>();
+                                    const result: Destination[] = [];
+                                    for (const item of scored) {
+                                        const id = item.d.id;
+                                        if (seen.has(id)) continue;
+                                        seen.add(id);
+                                        result.push(item.d);
+                                        if (result.length >= limit) break;
+                                    }
+                                    return result;
+                                };
+
+                                const relatedCandidates = Array.from(uniqueDests.values());
+                                const scoredRelated = computeRelated(relatedCandidates, curDest, 5);
+
+                                if (mounted) setRelated(scoredRelated);
+                        }
+                        if (mounted) {
+                            setLoadingTop(false);
+                            setLoadingRelated(false);
                         }
                     } catch (err) {
                         console.error('Failed to eagerly load top/related data:', err);
+                        if (mounted) {
+                            setLoadingTop(false);
+                            setLoadingRelated(false);
+                        }
                     }
                 } else {
                     if (mounted) setDestination(null);
@@ -433,58 +512,103 @@ export default function DestinationDetail() {
         let mounted = true;
 
         (async () => {
-            try {
+                try {
+                setLoadingTop(true);
+                setLoadingRelated(true);
                 const [recsResp, destsResp] = await Promise.all([getAllRecommendations(), getAllDestinations()]);
                 const recs: Recommendation[] = recsResp.data;
                 const dests: Destination[] = destsResp.data;
 
-                // compute top 5 by avg ai score
-                const scores: {[key: number]: {id: number; name: string; country: string; count: number; total: number}} = {};
+                // compute top 5 by avg ai score (normalize ids)
+                const scores: {[key: number]: {id: number; name: string; country: string; count: number; total: number; dest?: Destination}} = {};
                 recs.forEach(r => {
-                    if (!scores[r.destinationId]) {
-                        const d = dests.find(dd => dd.id === r.destinationId);
-                        scores[r.destinationId] = {
-                            id: r.destinationId,
-                            name: d?.name || `Destination ${r.destinationId}`,
+                    const destIdNum = normalizeDestinationId(r);
+                    if (destIdNum === null) return;
+
+                    if (!scores[destIdNum]) {
+                        const d = dests.find(dd => dd.id === destIdNum);
+                        scores[destIdNum] = {
+                            id: destIdNum,
+                            name: d?.name || `Destination ${destIdNum}`,
                             country: d?.country || 'Unknown',
                             count: 0,
                             total: 0,
+                            dest: d,
                         };
                     }
-                    scores[r.destinationId].count += 1;
-                    scores[r.destinationId].total += r.aiScore;
+                    scores[destIdNum].count += 1;
+                    scores[destIdNum].total += getAiScore(r);
                 });
 
                 const top = Object.values(scores)
-                    .map(s => ({id: s.id, name: s.name, country: s.country, avgScore: s.total / s.count, count: s.count}))
+                    .map(s => ({
+                        id: s.id,
+                        name: s.name,
+                        country: s.country,
+                        avgScore: s.total / s.count,
+                        count: s.count,
+                        sustainabilityScore: s.dest?.sustainabilityScore,
+                        costIndex: s.dest?.costIndex,
+                        publicTransportScore: s.dest?.publicTransportScore,
+                        crowdIndex: s.dest?.crowdIndex,
+                        description: s.dest?.description,
+                    }))
                     .sort((a, b) => b.avgScore - a.avgScore)
                     .slice(0, 5);
 
                 if (mounted) setTop5(top);
+                if (mounted) setLoadingTop(false);
 
-                // compute related destinations if we have a current destination
-                if (mounted && destination) {
-                    const currentTags = (destination.tags || '').split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
-                    const relatedCandidates = dests.filter(d => d.id !== destination.id);
-                    const scoredRelated = relatedCandidates.map(d => {
-                        const tags = (d.tags || '').split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
-                        const shared = tags.filter(t => currentTags.includes(t)).length;
-                        const sameCountry = d.country === destination.country ? 1 : 0;
-                        return {d, score: shared * 2 + sameCountry};
-                    }).filter(x => x.score > 0)
-                      .sort((a, b) => b.score - a.score || b.d.sustainabilityScore - a.d.sustainabilityScore)
-                      .slice(0, 5)
-                      .map(x => x.d);
+                  // compute related destinations if we have a current destination
+                  if (mounted && destination) {
+                      const currentTags = (destination.tags || '').split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+                      // Filter destinations excluding current one and deduplicate by ID
+                      const uniqueDests = new Map<number, Destination>();
+                      dests.forEach(d => {
+                          if (d.id !== destination.id && !uniqueDests.has(d.id)) {
+                              uniqueDests.set(d.id, d);
+                          }
+                      });
 
-                    if (mounted) setRelated(scoredRelated);
-                } else {
-                    if (mounted) setRelated([]);
-                }
+                       const computeRelated = (candidates: Destination[], reference: Destination, limit = 5) => {
+                           const scored = candidates.map(d => {
+                               const tags = (d.tags || '').split(',').map(t => t.trim().toLowerCase()).filter(Boolean);
+                               const shared = tags.filter(t => currentTags.includes(t)).length;
+                               const sameCountry = d.country === reference.country ? 3 : 0;
+                               const scoreDiff = Math.abs((d.sustainabilityScore || 0) - (reference.sustainabilityScore || 0));
+                               const costSimilarity = Math.abs((d.costIndex || 0) - (reference.costIndex || 0)) < 20 ? 1 : 0;
+                               const finalScore = (shared * 3 + sameCountry + costSimilarity) - (scoreDiff / 20);
+                               return {d, score: finalScore};
+                           }).sort((a, b) => (b.score - a.score) || ((b.d.sustainabilityScore || 0) - (a.d.sustainabilityScore || 0)));
+
+                           const seen = new Set<number>();
+                           const result: Destination[] = [];
+                           for (const item of scored) {
+                               const id = item.d.id;
+                               if (seen.has(id)) continue;
+                               seen.add(id);
+                               result.push(item.d);
+                               if (result.length >= limit) break;
+                           }
+                           return result;
+                       };
+
+                       const relatedCandidates = Array.from(uniqueDests.values());
+                       const scoredRelated = computeRelated(relatedCandidates, destination, 5);
+
+                      if (mounted) setRelated(scoredRelated);
+                       if (mounted) setLoadingRelated(false);
+                   } else {
+                       if (mounted) setRelated([]);
+                       if (mounted) setLoadingRelated(false);
+                   }
             } catch (error) {
                 console.error('Failed to load destination/top/related data:', error);
                 if (mounted) {
                     setTop5([]);
                     setRelated([]);
+                    setLoadingTop(false);
+                    setLoadingRelated(false);
                 }
             }
         })();
@@ -498,7 +622,7 @@ export default function DestinationDetail() {
             <Container theme={theme}>
                 <LoadingSpinner>
                     <div className="spinner"></div>
-                    <p>Loading destination details...</p>
+                    <p>{t('destination.loading') ?? 'Loading destination details...'}</p>
                 </LoadingSpinner>
             </Container>
         );
@@ -507,11 +631,11 @@ export default function DestinationDetail() {
     if (!destination) {
         return (
             <Container theme={theme}>
-                <BackButton onClick={() => navigate(-1)}>← Go Back</BackButton>
+                <BackButton onClick={() => navigate(-1)}>{t('destination.back') ?? '← Go Back'}</BackButton>
                 <EmptyState style={{marginTop: '100px'}}>
                     <div className="icon">🗺️</div>
-                    <h3>Destination not found</h3>
-                    <p>Sorry, we couldn't find the destination you're looking for.</p>
+                    <h3>{t('destination.not_found') ?? 'Destination not found'}</h3>
+                    <p>{t('destination.not_found_help') ?? "Sorry, we couldn't find the destination you're looking for."}</p>
                 </EmptyState>
             </Container>
         );
@@ -527,7 +651,7 @@ export default function DestinationDetail() {
 
     return (
         <Container theme={theme}>
-            <BackButton onClick={() => navigate(-1)}>← Back to Recommendations</BackButton>
+            <BackButton onClick={() => navigate(-1)}>{t('destination.back')}</BackButton>
 
             <HeroSection $imageId={destination.id}>
                 <HeroOverlay>
@@ -541,10 +665,10 @@ export default function DestinationDetail() {
                     <Description>{destination.description}</Description>
 
                     <ScoreVisualization>
-                        <PageTitle>Sustainability & Quality Metrics</PageTitle>
+                                <PageTitle>{t('destination.sustainability_metrics')}</PageTitle>
 
                         <ScoreItem>
-                            <ScoreLabel>♻️ Sustainability</ScoreLabel>
+                             <ScoreLabel>♻️ {t('metric.sustainability') ?? 'Sustainability'}</ScoreLabel>
                             <ScoreBar>
                                 <ScoreFill
                                     width={destination.sustainabilityScore}
@@ -556,7 +680,7 @@ export default function DestinationDetail() {
                         </ScoreItem>
 
                         <ScoreItem>
-                            <ScoreLabel>🚆 Public Transport</ScoreLabel>
+                             <ScoreLabel>🚆 {t('metric.public_transport') ?? 'Public Transport'}</ScoreLabel>
                             <ScoreBar>
                                 <ScoreFill
                                     width={destination.publicTransportScore}
@@ -568,7 +692,7 @@ export default function DestinationDetail() {
                         </ScoreItem>
 
                         <ScoreItem>
-                            <ScoreLabel>🌍 CO₂ Impact</ScoreLabel>
+                             <ScoreLabel>🌍 {t('metric.co2_impact') ?? 'CO₂ Impact'}</ScoreLabel>
                             <ScoreBar>
                                 <ScoreFill
                                     width={100 - (destination.co2PerTrip / 200) * 100}
@@ -580,7 +704,7 @@ export default function DestinationDetail() {
                         </ScoreItem>
 
                         <ScoreItem>
-                            <ScoreLabel>👥 Crowd Level</ScoreLabel>
+                             <ScoreLabel>👥 {t('metric.crowd_level') ?? 'Crowd Level'}</ScoreLabel>
                             <ScoreBar>
                                 <ScoreFill
                                     width={100 - destination.crowdIndex}
@@ -594,7 +718,7 @@ export default function DestinationDetail() {
 
                     <MetricsGrid>
                         <MetricCard color="#48bb78" theme={theme}>
-                            <MetricLabel theme={theme}>Sustainability Score</MetricLabel>
+                             <MetricLabel theme={theme}>{t('metric.sustainability_score') ?? 'Sustainability Score'}</MetricLabel>
                             <MetricValue color="#48bb78">
                                 {destination.sustainabilityScore}
                                 <MetricUnit theme={theme}>/ 100</MetricUnit>
@@ -605,7 +729,7 @@ export default function DestinationDetail() {
                         </MetricCard>
 
                         <MetricCard color="#3b82f6" theme={theme}>
-                            <MetricLabel theme={theme}>Cost Index</MetricLabel>
+                             <MetricLabel theme={theme}>{t('metric.cost_index') ?? 'Cost Index'}</MetricLabel>
                             <MetricValue color="#3b82f6">
                                 ${destination.costIndex}
                                 <MetricUnit theme={theme}> / day</MetricUnit>
@@ -616,7 +740,7 @@ export default function DestinationDetail() {
                         </MetricCard>
 
                         <MetricCard color="#8b5cf6" theme={theme}>
-                            <MetricLabel theme={theme}>Temperature</MetricLabel>
+                             <MetricLabel theme={theme}>{t('metric.temperature') ?? 'Temperature'}</MetricLabel>
                             <MetricValue color="#8b5cf6">
                                 {destination.avgTemp}
                                 <MetricUnit theme={theme}>°C</MetricUnit>
@@ -629,19 +753,19 @@ export default function DestinationDetail() {
 
                     <InfoGrid>
                         <InfoItem theme={theme}>
-                            <div className="label">CO₂ per trip</div>
+                            <div className="label">{t('info.co2_per_trip') ?? 'CO₂ per trip'}</div>
                             <div className="value">{destination.co2PerTrip} kg</div>
                         </InfoItem>
                         <InfoItem theme={theme}>
-                            <div className="label">Public Transport Score</div>
+                            <div className="label">{t('info.public_transport_score') ?? 'Public Transport Score'}</div>
                             <div className="value">{destination.publicTransportScore}/100</div>
                         </InfoItem>
                         <InfoItem theme={theme}>
-                            <div className="label">Crowd Index</div>
+                            <div className="label">{t('info.crowd_index') ?? 'Crowd Index'}</div>
                             <div className="value">{destination.crowdIndex}/100</div>
                         </InfoItem>
                         <InfoItem theme={theme}>
-                            <div className="label">Best Season</div>
+                            <div className="label">{t('info.best_season') ?? 'Best Season'}</div>
                             <div className="value">{destination.bestSeason}</div>
                         </InfoItem>
                         {destination.latitude && (
@@ -660,7 +784,7 @@ export default function DestinationDetail() {
 
                     {tags.length > 0 && (
                         <div>
-                            <PageTitle style={{marginTop: '2rem'}}>Tags & Categories</PageTitle>
+                             <PageTitle style={{marginTop: '2rem'}}>{t('destination.tags_and_categories')}</PageTitle>
                             <TagsContainer>
                                 {tags.map((tag, index) => (
                                     <Badge key={index} color="green">
@@ -672,39 +796,53 @@ export default function DestinationDetail() {
                     )}
 
                     <RecommendationBox>
-                        <h3>💡 Why Visit {destination.name}?</h3>
+                        <h3>{t('destination.why_visit_title', { name: destination.name })}</h3>
                         <p>
-                            With a sustainability score of <strong>{destination.sustainabilityScore}/100</strong> and
-                            excellent
-                            public transportation infrastructure ({destination.publicTransportScore}/100), this
-                            destination is
-                            perfect for eco-conscious travelers. The low carbon footprint ({destination.co2PerTrip} kg
-                            CO₂) and
-                            {destination.crowdIndex < 70 ? ' peaceful atmosphere' : ' vibrant energy'} make it an ideal
-                            choice
-                            for sustainable tourism.
+                            {t('destination.why_visit_summary', { score: destination.sustainabilityScore, pt: destination.publicTransportScore })}
+                            {' '}
+                            {destination.crowdIndex < 70 ? (t('destination.peaceful') ?? 'peaceful atmosphere') : (t('destination.vibrant') ?? 'vibrant energy')}
+                            {' '}
+                            {t('destination.why_visit_extra') ?? 'makes it an ideal choice for sustainable tourism.'}
                         </p>
                     </RecommendationBox>
-                    {related.length > 0 && (
-                        <div style={{marginTop: '2rem'}}>
-                            <PageTitle style={{marginBottom: '1rem'}}>🔗 Related Destinations</PageTitle>
+                    <div style={{marginTop: '2rem'}}>
+                        <PageTitle style={{marginBottom: '1rem'}}>{t('destination.related')}</PageTitle>
+                        {loadingRelated ? (
+                            <div style={{display: 'flex', gap: '0.75rem', flexWrap: 'wrap'}}>
+                                {[1,2,3].map(i => (
+                                    <div key={i} style={{background: theme.colors.bgSecondary, padding: '0.75rem 1rem', borderRadius: 10, border: `1px solid ${theme.colors.border}`, minWidth: 220, height: 110, display: 'flex', gap: '0.75rem', alignItems: 'center', opacity: 0.6}} />
+                                ))}
+                            </div>
+                        ) : related.length > 0 ? (
                             <div style={{display: 'flex', gap: '0.75rem', flexWrap: 'wrap'}}>
                                 {related.map(r => (
-                                    <div key={r.id} style={{background: theme.colors.cardBg, padding: '0.75rem 1rem', borderRadius: 10, border: `1px solid ${theme.colors.border}`, minWidth: 220}}>
-                                        <div style={{fontWeight: 700}}>{r.name}</div>
-                                        <div style={{fontSize: '0.85rem', color: theme.colors.textSecondary}}>🌍 {r.country}</div>
-                                        <div style={{marginTop: '0.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center'}}>
-                                            <div style={{fontSize: '0.85rem', color: theme.colors.textSecondary}}>Score: {r.sustainabilityScore}/100</div>
+                                    <div key={r.id} style={{background: theme.colors.cardBg, padding: '0.75rem 1rem', borderRadius: 10, border: `1px solid ${theme.colors.border}`, minWidth: 220, display: 'flex', gap: '0.75rem', alignItems: 'center'}}>
+                                        <img src={`https://picsum.photos/120/80?random=${r.id + 9000}`} alt={r.name} style={{width: 100, height: 64, objectFit: 'cover', borderRadius: 8}} />
+                                        <div style={{flex: 1}}>
+                                            <div style={{fontWeight: 700}}>{r.name}</div>
+                                            <div style={{fontSize: '0.85rem', color: theme.colors.textSecondary}}>🌍 {r.country}</div>
+                                            <div style={{fontSize: '0.85rem', color: theme.colors.textSecondary, marginTop: '0.5rem'}}>Sustainability: {r.sustainabilityScore}/100 • Cost: ${r.costIndex?.toFixed?.(2) ?? r.costIndex}</div>
+                                        </div>
+                                        <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem', alignItems: 'flex-end'}}>
+                                            <Badge color="green">{r.sustainabilityScore}</Badge>
                                             <button onClick={() => navigate(`/destination/${r.id}`)} style={{background: theme.colors.primary, color: 'white', border: 'none', padding: '0.35rem 0.5rem', borderRadius: 8, fontWeight: 700}}>View</button>
                                         </div>
                                     </div>
                                 ))}
                             </div>
-                        </div>
-                    )}
-                    {top5.length > 0 && (
-                        <div style={{marginTop: '2rem'}}>
-                            <PageTitle style={{marginBottom: '1rem'}}>🏆 Top 5 Destinations (by AI Score)</PageTitle>
+                        ) : (
+                            <div style={{padding: '1rem', color: theme.colors.textSecondary}}>{t('destination.related_none') ?? 'No related destinations found.'}</div>
+                        )}
+                    </div>
+                    <div style={{marginTop: '2rem'}}>
+                        <PageTitle style={{marginBottom: '1rem'}}>{t('destination.top5')}</PageTitle>
+                        {loadingTop ? (
+                            <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem'}}>
+                                {[1,2,3,4,5].map(i => (
+                                    <div key={i} style={{background: theme.colors.bgSecondary, padding: '1rem', borderRadius: '12px', border: `1px solid ${theme.colors.border}`, height: 140, opacity: 0.6}} />
+                                ))}
+                            </div>
+                        ) : top5.length > 0 ? (
                             <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '1rem'}}>
                                 {top5.map((d) => (
                                     <div key={d.id} style={{background: theme.colors.cardBg, padding: '1rem', borderRadius: '12px', border: `1px solid ${theme.colors.border}`}}>
@@ -713,8 +851,17 @@ export default function DestinationDetail() {
                                             <div style={{flex: 1}}>
                                                 <div style={{fontWeight: 700}}>{d.name}</div>
                                                 <div style={{fontSize: '0.85rem', color: theme.colors.textSecondary}}>🌍 {d.country}</div>
+                                                <div style={{fontSize: '0.8rem', color: theme.colors.textSecondary, marginTop: 6}}>
+                                                    {d.description ? (d.description.length > 120 ? d.description.slice(0, 117) + '...' : d.description) : ''}
+                                                </div>
+                                                <div style={{display: 'flex', gap: '0.5rem', marginTop: 8, alignItems: 'center'}}>
+                                                    <Badge color="green">S:{d.sustainabilityScore ?? '—'}</Badge>
+                                                    <div style={{fontSize: '0.8rem', color: theme.colors.textSecondary}}>💶 ${d.costIndex ?? '—'}</div>
+                                                    <div style={{fontSize: '0.8rem', color: theme.colors.textSecondary}}>🚆 {d.publicTransportScore ?? '—'}%</div>
+                                                    <div style={{fontSize: '0.8rem', color: theme.colors.textSecondary}}>👥 {d.crowdIndex ?? '—'}</div>
+                                                </div>
                                             </div>
-                                            <Badge color="green">{d.avgScore.toFixed(1)}/100</Badge>
+                                            <Badge color="green">{(typeof d.avgScore === 'number' ? d.avgScore.toFixed(1) : '—')}/100</Badge>
                                         </div>
                                         <div style={{display: 'flex', justifyContent: 'space-between', marginTop: '0.75rem', alignItems: 'center'}}>
                                             <div style={{fontSize: '0.85rem', color: theme.colors.textSecondary}}>{d.count} rec{d.count > 1 ? 's' : ''}</div>
@@ -728,8 +875,10 @@ export default function DestinationDetail() {
                                     </div>
                                 ))}
                             </div>
-                        </div>
-                    )}
+                        ) : (
+                            <div style={{padding: '1rem', color: theme.colors.textSecondary}}>{t('recommendations.empty_help') ?? 'No recommendations available yet.'}</div>
+                        )}
+                    </div>
                 </MainCard>
             </ContentSection>
         </Container>

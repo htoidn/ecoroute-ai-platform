@@ -275,7 +275,7 @@ export default function Profile() {
         const saved = localStorage.getItem('user-profile');
         return saved ? JSON.parse(saved) : {
             username: user?.username || 'EcoTraveler',
-            email: localStorage.getItem('user-email') || 'htoideen@gmail.com',
+            email: localStorage.getItem('user-email') || 'adminecoroute@gmail.com',
             firstName: 'Eco',
             lastName: 'Traveler',
             bio: 'Passionate about sustainable tourism and eco-friendly travel.',

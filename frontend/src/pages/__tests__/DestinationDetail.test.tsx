@@ -14,7 +14,7 @@ vi.mock('../../contexts/ThemeContext', () => ({
             }
         },
         toggleTheme: () => {},
-        setMode: (_: 'light'|'dark') => {}
+        setMode: () => {}
     })
 }));
 
@@ -44,7 +44,7 @@ if (typeof globalThis.localStorage === 'undefined') {
         if (typeof (globalThis.localStorage as any).getItem !== 'function') (globalThis.localStorage as any).getItem = () => null;
         if (typeof (globalThis.localStorage as any).setItem !== 'function') (globalThis.localStorage as any).setItem = () => {};
         if (typeof (globalThis.localStorage as any).removeItem !== 'function') (globalThis.localStorage as any).removeItem = () => {};
-    } catch (e) {
+    } catch {
         // ignore
     }
 }

@@ -19,7 +19,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
     const context = useContext(AuthContext);
     if (context === undefined) {
@@ -44,7 +43,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
         if (token && savedUser) {
             try {
                 const userData = JSON.parse(savedUser);
-                // eslint-disable-next-line react-hooks/set-state-in-effect
                 setUser(userData);
                 // set header on API instance used for backend calls
                 API.defaults.headers.common['Authorization'] = `Bearer ${token}`;

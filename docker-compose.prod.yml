@@ -1,0 +1,116 @@
+version: '3.9'
+
+services:
+
+  postgres:
+    image: postgres:18
+    container_name: ecoroute-postgres-prod
+    restart: always
+    environment:
+      POSTGRES_DB: ecoroute
+      POSTGRES_USER: ecoroute_hdnh
+      POSTGRES_PASSWORD: eco7ro1ute
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ecoroute_hdnh"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ecoroute-network-prod
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: ecoroute-backend-prod
+    restart: always
+    ports:
+      - "8080:8080"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      ai-service:
+        condition: service_started
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/ecoroute
+      SPRING_DATASOURCE_USERNAME: ecoroute_hdnh
+      SPRING_DATASOURCE_PASSWORD: eco7ro1ute
+      AI_SERVICE_URL: http://ai-service:8000
+      SPRING_PROFILES_ACTIVE: prod
+      JAVA_OPTS: -Xmx1024m -Xms512m
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - ecoroute-network-prod
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+      args:
+        - NODE_ENV=production
+    container_name: ecoroute-frontend-prod
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - ecoroute-network-prod
+    environment:
+      - VITE_API_URL=http://backend:8080
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "3"
+
+  ai-service:
+    build:
+      context: ./ai-service
+      dockerfile: Dockerfile
+    container_name: ecoroute-ai-service-prod
+    restart: always
+    ports:
+      - "8000:8000"
+    networks:
+      - ecoroute-network-prod
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 20s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+volumes:
+  postgres_data_prod:
+    driver: local
+
+networks:
+  ecoroute-network-prod:
+    driver: bridge
+

@@ -5,6 +5,9 @@ import {getAllDestinations, getAllRecommendations, getAllUsers} from '../service
 import {useTheme} from '../contexts/ThemeContext';
 import {Badge, Button, LoadingSpinner, PageContainer, SearchContainer, SearchInput,} from '../styles/SharedStyles';
 import WeatherCard from '../components/WeatherCard';
+import EcoScoreCard from '../components/EcoScoreCard';
+import RouteCard from '../components/RouteCard';
+import { useLocalization } from '../contexts/LocalizationContext';
 
 interface Destination {
     id: number;
@@ -247,6 +250,7 @@ export default function Home() {
     const {theme} = useTheme();
     const navigate = useNavigate();
     const [searchInput, setSearchInput] = useState('');
+    const [allDestinations, setAllDestinations] = useState<Destination[]>([]);
     const [topDestinations, setTopDestinations] = useState<Destination[]>([]);
     const [featuredRecommendations, setFeaturedRecommendations] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
@@ -254,9 +258,7 @@ export default function Home() {
     const [searchResults, setSearchResults] = useState<Destination[]>([]);
     const [hasSearched, setHasSearched] = useState(false);
 
-    useEffect(() => {
-        loadData();
-    }, []);
+
 
     // Slideshow background effect
     useEffect(() => {
@@ -267,7 +269,7 @@ export default function Home() {
         return () => clearInterval(interval);
     }, []);
 
-    const loadData = async () => {
+    async function loadData() {
         setLoading(true);
         try {
             const [destsResponse, recsResponse, usersResponse] = await Promise.all([
@@ -276,6 +278,8 @@ export default function Home() {
                 getAllUsers(),
             ]);
 
+            // Store all destinations for search
+            setAllDestinations(destsResponse.data);
 
             // Create users map
             const usersMap: { [key: number]: any } = {};
@@ -338,27 +342,60 @@ export default function Home() {
         } finally {
             setLoading(false);
         }
-    };
+    }
+
+    useEffect(() => {
+        loadData();
+    }, []);
 
     const handleSearch = () => {
         if (searchInput.trim()) {
-            // Filter destinations locally - matching results first
-            const query = searchInput.toLowerCase();
-            const matches = topDestinations.filter(dest =>
-                dest.name.toLowerCase().includes(query) ||
-                dest.country.toLowerCase().includes(query) ||
-                dest.description.toLowerCase().includes(query)
-            );
+            const query = searchInput.toLowerCase().trim();
 
-            // Separate matching and non-matching
-            const nonMatches = topDestinations.filter(dest =>
-                !dest.name.toLowerCase().includes(query) &&
-                !dest.country.toLowerCase().includes(query) &&
-                !dest.description.toLowerCase().includes(query)
-            );
+            let matches = allDestinations.filter(dest => {
+                const destName = dest.name.toLowerCase();
+                const destCountry = dest.country.toLowerCase();
+                const destDesc = dest.description.toLowerCase();
+                const tags = (dest.tags || '').toLowerCase();
 
-            // Show matching first, then others
-            setSearchResults([...matches, ...nonMatches]);
+                // Check for attribute-based searches
+                if (query.includes('eco-friendly') || query.includes('ecofriendly') || query === 'eco') {
+                    return (dest.sustainabilityScore ?? 0) >= 70;
+                }
+                if (query.includes('low-cost') || query.includes('lowcost') || query === 'cheap') {
+                    return (dest.costIndex ?? 0) <= 50;
+                }
+                if (query.includes('high-cost') || query.includes('highcost') || query === 'expensive') {
+                    return (dest.costIndex ?? 0) >= 75;
+                }
+                if (query.includes('crowded') || query === 'busy') {
+                    return (dest.crowdIndex ?? 0) >= 70;
+                }
+                if (query.includes('quiet') || query === 'peaceful') {
+                    return (dest.crowdIndex ?? 0) <= 40;
+                }
+                if (query.includes('beach') || query === 'sea') {
+                    return tags.includes('beach') || destDesc.includes('beach');
+                }
+                if (query.includes('mountain') || query === 'hiking') {
+                    return tags.includes('mountain') || destDesc.includes('mountain');
+                }
+                if (query.includes('urban') || query === 'city') {
+                    return tags.includes('urban') || destDesc.includes('urban');
+                }
+
+                // Default text search
+                return destName.includes(query) || destCountry.includes(query) || destDesc.includes(query) || tags.includes(query);
+            });
+
+            // Sort: exact name match first, then others
+            matches.sort((a, b) => {
+                const aExact = a.name.toLowerCase() === query ? 0 : 1;
+                const bExact = b.name.toLowerCase() === query ? 0 : 1;
+                return aExact - bExact;
+            });
+
+            setSearchResults(matches);
             setHasSearched(true);
         }
     };
@@ -369,12 +406,14 @@ export default function Home() {
         setSearchResults([]);
     };
 
+    const { t } = useLocalization();
+
     if (loading) {
         return (
             <PageContainer theme={theme}>
                 <LoadingSpinner>
                     <div className="spinner"></div>
-                    <p>Loading your eco-friendly adventure...</p>
+                    <p>{t('home.loading',) || 'Loading your eco-friendly adventure...'}</p>
                 </LoadingSpinner>
             </PageContainer>
         );
@@ -383,22 +422,19 @@ export default function Home() {
     return (
         <PageContainer theme={theme}>
             <HeroSection backgroundIndex={backgroundIndex}>
-                <h1>🌍 Smart Sustainable Tourism</h1>
-                <p>
-                    Discover eco-friendly destinations tailored to your preferences. Find the perfect balance between
-                    sustainability, cost, and comfort with AI-powered recommendations.
-                </p>
+                <h1>{t('home.title')}</h1>
+                <p>{t('home.subtitle')}</p>
                 <SearchContainer>
                     <SearchInput
                         type="text"
-                        placeholder="Search destinations (e.g., Berlin, eco-friendly, low-cost)..."
+                        placeholder={t('home.search_placeholder')}
                         value={searchInput}
                         onChange={(e) => setSearchInput(e.target.value)}
                         onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                         theme={theme}
                     />
                     <Button onClick={handleSearch} variant="secondary">
-                        🔍 Search Now
+                        {t('home.search_button')}
                     </Button>
                 </SearchContainer>
             </HeroSection>
@@ -407,9 +443,9 @@ export default function Home() {
             {hasSearched && (
                 <SearchResultsSection theme={theme}>
                     <SearchResultsTitle theme={theme}>
-                        🔍 Search Results for "{searchInput}"
+                        {t('search.results_for', { query: searchInput }) ?? `🔍 Search Results for "${searchInput}"`}
                         <ClearButton theme={theme} onClick={handleClearSearch}>
-                            Clear
+                            {t('home.clear') ?? 'Clear'}
                         </ClearButton>
                     </SearchResultsTitle>
                     {searchResults.length > 0 ? (
@@ -440,15 +476,15 @@ export default function Home() {
                             ))}
                         </CardGrid>
                     ) : (
-                        <EmptyMessage theme={theme}>
+                            <EmptyMessage theme={theme}>
                             <div className="icon">🔍</div>
-                            <p>No destinations match your search</p>
+                            <p>{t('home.no_match') ?? 'No destinations match your search'}</p>
                         </EmptyMessage>
                     )}
                 </SearchResultsSection>
             )}
             <Section>
-                <SectionTitle>⭐ AI-Powered Recommendations</SectionTitle>
+                <SectionTitle>{t('recommendations.title')}</SectionTitle>
                 {featuredRecommendations.length > 0 ? (
                     <CardGrid>
                         {featuredRecommendations.map((rec) => (
@@ -483,12 +519,12 @@ export default function Home() {
                             </DestinationCard>
                         ))}
                     </CardGrid>
-                ) : (
+                    ) : (
                     <EmptyMessage theme={theme}>
                         <div className="icon">🤖</div>
-                        <p>No recommendations available yet</p>
+                        <p>{t('home.no_recommendations')}</p>
                         <Button onClick={() => navigate('/explore')} variant="secondary">
-                            Explore Destinations
+                            {t('home.explore_button')}
                         </Button>
                     </EmptyMessage>
                 )}
@@ -496,7 +532,7 @@ export default function Home() {
 
             {/* Top Eco-Friendly Destinations */}
             <Section>
-                <SectionTitle>🌿 Top Eco-Friendly Destinations</SectionTitle>
+                <SectionTitle>{t('home.top_destinations_title')}</SectionTitle>
                 {topDestinations.length > 0 ? (
                     <CardGrid>
                         {topDestinations.map(dest => (
@@ -538,7 +574,7 @@ export default function Home() {
 
             {/* Weather Information */}
             <Section>
-                <SectionTitle>🌤️ Travel Weather Information</SectionTitle>
+                <SectionTitle>{t('home.weather_title')}</SectionTitle>
                 <CardGrid style={{gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))'}}>
                     <WeatherCard city="Berlin"/>
                     <WeatherCard city="Frankfurt"/>
@@ -546,9 +582,30 @@ export default function Home() {
                 </CardGrid>
             </Section>
 
+            {/* Eco Score Calculator */}
+            <Section>
+                <SectionTitle>♻️ Carbon Footprint Analyzer</SectionTitle>
+                <CardGrid style={{gridTemplateColumns: '1fr'}}>
+                    <EcoScoreCard initialDistance={100} initialTransport="car"/>
+                </CardGrid>
+            </Section>
+
+            {/* Route Calculator */}
+            <Section>
+                <SectionTitle>🗺️ Eco-Route Planner</SectionTitle>
+                <CardGrid style={{gridTemplateColumns: '1fr'}}>
+                    <RouteCard
+                        startLat={51.5074}
+                        startLon={-0.1278}
+                        endLat={48.8566}
+                        endLon={2.3522}
+                    />
+                </CardGrid>
+            </Section>
+
             {/* Quick Stats */}
             <Section>
-                <SectionTitle>📊 Quick Overview</SectionTitle>
+                <SectionTitle>{t('home.quick_overview_title')}</SectionTitle>
                 <CardGrid>
                     <DestinationCard theme={theme}>
                         <CardContent style={{textAlign: 'center', padding: '2rem'}}>
@@ -560,7 +617,7 @@ export default function Home() {
                             }}>
                                 {topDestinations.length}
                             </div>
-                            <div style={{color: theme.colors.textSecondary}}>Active Destinations</div>
+                            <div style={{color: theme.colors.textSecondary}}>{t('home.active_destinations') ?? 'Active Destinations'}</div>
                         </CardContent>
                     </DestinationCard>
                     <DestinationCard theme={theme}>
@@ -573,7 +630,7 @@ export default function Home() {
                             }}>
                                 {featuredRecommendations.length}
                             </div>
-                            <div style={{color: theme.colors.textSecondary}}>AI Recommendations</div>
+                            <div style={{color: theme.colors.textSecondary}}>{t('home.ai_recommendations_label') ?? 'AI Recommendations'}</div>
                         </CardContent>
                     </DestinationCard>
                     <DestinationCard theme={theme}>

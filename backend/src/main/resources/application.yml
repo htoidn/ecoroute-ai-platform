@@ -1,21 +1,24 @@
+server:
+  port: 8081
+
 spring:
   application:
     name: ecoroute-ai-platform
   datasource:
     url: jdbc:postgresql://localhost:5432/ecoroute
+    driver-class-name: org.postgresql.Driver
     username: ecoroute_hdnh
     password: eco7ro1ute
-    driver-class-name: org.postgresql.Driver
 
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: update
     show-sql: true
     database-platform: org.hibernate.dialect.PostgreSQLDialect
 
   sql:
     init:
-      mode: always
+      mode: never
 
 ai:
   service:
@@ -36,4 +39,3 @@ external:
     geoapify:
       key: 2aa4058c6b28481db60027ba82ac4531
       url: https://api.geoapify.com/v2/places
-

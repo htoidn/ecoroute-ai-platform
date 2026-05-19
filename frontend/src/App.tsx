@@ -2,6 +2,7 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from './contexts/AuthContext';
 import { useTheme, type ThemeType } from './contexts/ThemeContext';
+import { LocalizationProvider } from './contexts/LocalizationContext';
 import Navigation from './components/Navigation';
 import { NotificationProvider } from './contexts/NotificationContext';
 
@@ -62,9 +63,10 @@ function App() {
 
     return (
         <AppWrapper theme={theme}>
-            <NotificationProvider>
-                <Navigation />
-                <Routes>
+            <LocalizationProvider>
+                <NotificationProvider>
+                    <Navigation />
+                    <Routes>
                 {/* Public Routes */}
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
@@ -105,8 +107,9 @@ function App() {
 
                 {/* Catch-all Route */}
                 <Route path="*" element={<Navigate to={isAuthenticated ? '/' : '/login'} replace />} />
-                </Routes>
-            </NotificationProvider>
+                    </Routes>
+                </NotificationProvider>
+            </LocalizationProvider>
 
             <style>{`
                 @keyframes spin {

@@ -647,6 +647,9 @@ export default function Recommendations() {
                                 <TableCell data-label="Reason" theme={theme}>
                                     {rec.reason}
                                 </TableCell>
+                                <ViewDetailsButton onClick={() => navigate(`/destination/${rec.destinationId}`)}>
+                                    View Details →
+                                </ViewDetailsButton>
                                 <TableCell data-label="Action" theme={theme}>
                                         <ViewDetailsButton onClick={() => {
                                                 const recId = rec.id;

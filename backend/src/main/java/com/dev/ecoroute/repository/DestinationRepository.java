@@ -22,7 +22,7 @@ public interface DestinationRepository extends JpaRepository<Destination, Long> 
 
     @Query(value = """
                 SELECT * FROM destinations
-                WHERE tags ILIKE %:tag%
+                WHERE tags ILIKE CONCAT('%', :tag, '%')
             """, nativeQuery = true)
     List<Destination> findByTag(@Param("tag") String tag);
 

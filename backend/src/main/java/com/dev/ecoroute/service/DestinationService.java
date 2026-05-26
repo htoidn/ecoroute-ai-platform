@@ -5,6 +5,7 @@ import com.dev.ecoroute.repository.DestinationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Collections;
 import java.util.List;
@@ -15,17 +16,8 @@ import java.util.List;
 public class DestinationService {
     private final DestinationRepository repository;
 
-    // CREATE/INSERT
-    public Destination createDestination(Destination destination) {
-        try {
-            return repository.save(destination);
-        } catch (Exception e) {
-            log.error("Error creating destination: {}", e.getMessage());
-            throw new RuntimeException("Database error: " + e.getMessage());
-        }
-    }
-
     // READ ALL
+    @Transactional(readOnly = true)
     public List<Destination> getAllDestinations() {
         try {
             return repository.findAll();
@@ -39,6 +31,18 @@ public class DestinationService {
             throw new RuntimeException("Database error: " + e.getMessage());
         }
     }
+
+    // CREATE/INSERT
+    public Destination createDestination(Destination destination) {
+        try {
+            return repository.save(destination);
+        } catch (Exception e) {
+            log.error("Error creating destination: {}", e.getMessage());
+            throw new RuntimeException("Database error: " + e.getMessage());
+        }
+    }
+
+
 
     // READ BY ID
     public Destination getById(Long id) {

@@ -1,6 +1,6 @@
 import type {ReactNode} from 'react';
 import React, {createContext, useContext, useEffect, useState} from 'react';
-import axios from 'axios';
+import API from '../services/api';
 
 interface User {
     username: string;
@@ -9,8 +9,9 @@ interface User {
 
 interface AuthContextType {
     user: User | null;
-    login: (username: string, password: string) => Promise<void>;
-    register: (email: string, username: string, password: string, preferences: string) => Promise<void>;
+    // login/register return the created user object for immediate redirects
+    login: (username: string, password: string) => Promise<User>;
+    register: (email: string, username: string, password: string, preferences: string) => Promise<User>;
     logout: () => void;
     isAuthenticated: boolean;
     loading: boolean;
@@ -18,7 +19,6 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-// eslint-disable-next-line react-refresh/only-export-components
 export const useAuth = () => {
     const context = useContext(AuthContext);
     if (context === undefined) {
@@ -43,9 +43,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
         if (token && savedUser) {
             try {
                 const userData = JSON.parse(savedUser);
-                // eslint-disable-next-line react-hooks/set-state-in-effect
                 setUser(userData);
-                axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+                // set header on API instance used for backend calls
+                API.defaults.headers.common['Authorization'] = `Bearer ${token}`;
             } catch {
                 // Invalid stored data, clear it
                 localStorage.removeItem('token');
@@ -58,7 +58,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 
     const login = async (username: string, password: string) => {
         try {
-            const response = await axios.post('/api/auth/login', {username, password});
+            const response = await API.post('/auth/login', {username, password});
             const {token, username: userUsername, role} = response.data;
 
             const userData = {username: userUsername, role};
@@ -66,7 +66,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 
             localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify(userData));
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            API.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            return userData;
         } catch {
             throw new Error('Login failed');
         }
@@ -74,7 +75,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 
     const register = async (email: string, username: string, password: string, preferences: string) => {
         try {
-            const response = await axios.post('/api/auth/register', {email, username, password, preferences});
+            const response = await API.post('/auth/register', {email, username, password, preferences});
             const {token, username: userUsername, role} = response.data;
 
             const userData = {username: userUsername, role};
@@ -82,7 +83,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
 
             localStorage.setItem('token', token);
             localStorage.setItem('user', JSON.stringify(userData));
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            API.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+            return userData;
         } catch {
             throw new Error('Registration failed');
         }
@@ -92,7 +94,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({children}) => {
         setUser(null);
         localStorage.removeItem('token');
         localStorage.removeItem('user');
-        delete axios.defaults.headers.common['Authorization'];
+        delete API.defaults.headers.common['Authorization'];
     };
 
     const value = {

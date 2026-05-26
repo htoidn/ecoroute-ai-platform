@@ -1,10 +1,12 @@
 import {useEffect, useState} from 'react';
 import {useNavigate} from 'react-router-dom';
 import styled from 'styled-components';
-import {getAllDestinations, getAllRecommendations} from '../services/api';
+import {getAllDestinations, getAllRecommendations, getAllUsers} from '../services/api';
 import {useTheme} from '../contexts/ThemeContext';
+import {useNotification} from '../contexts/NotificationContext';
 import {
     Badge,
+    CardGrid,
     EmptyState,
     LoadingSpinner,
     PageContainer,
@@ -12,14 +14,21 @@ import {
     PageSubtitle,
     PageTitle,
 } from '../styles/SharedStyles';
+import EcoScoreCard from '../components/EcoScoreCard';
+import WeatherCard from '../components/WeatherCard';
+import RouteCard from '../components/RouteCard';
+import { getDestinationId as helperGetDestinationId, getUserId as helperGetUserId, getTop5DestinationsByAIScore as helperGetTop5 } from '../utils/recommendationHelpers';
+import { useLocalization } from '../contexts/LocalizationContext';
 
 interface Recommendation {
     id: number;
-    userId: number;
-    destinationId: number;
+    userId?: number;
+    destinationId?: number;
     aiScore: number;
     reason: string;
     createdAt?: string;
+    user?: { id: number; username?: string };
+    destination?: { id: number; name: string; country: string };
 }
 
 interface Destination {
@@ -27,6 +36,10 @@ interface Destination {
     name: string;
     country: string;
     sustainabilityScore: number;
+    costIndex?: number;
+    crowdIndex?: number;
+    publicTransportScore?: number;
+    description?: string;
 }
 
 const TabContainer = styled.div`
@@ -259,6 +272,121 @@ const StatCard = styled.div`
     }
 `;
 
+const TopDestinationsSection = styled.div`
+    margin-top: 3rem;
+    padding: 2rem;
+    background: ${props => props.theme?.colors?.cardBg || '#ffffff'};
+    border-radius: 12px;
+    box-shadow: 0 4px 15px ${props => props.theme?.colors?.shadow || 'rgba(0, 0, 0, 0.1)'};
+`;
+
+const DestinationCardSmall = styled.div<{ theme: any }>`
+    background: ${props => props.theme?.colors?.bgSecondary || '#f7fafc'};
+    border-radius: 12px;
+    padding: 1.5rem;
+    border: 1px solid ${props => props.theme?.colors?.border || '#e2e8f0'};
+    transition: all 0.3s ease;
+    cursor: pointer;
+    display: flex;
+    gap: 1.5rem;
+    align-items: flex-start;
+
+    &:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 8px 20px rgba(72, 187, 120, 0.2);
+        background: ${props => props.theme?.colors?.cardBg || '#ffffff'};
+    }
+
+    @media (max-width: 768px) {
+        flex-direction: column;
+    }
+`;
+
+const DestinationImageSmall = styled.img`
+    width: 150px;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 8px;
+    flex-shrink: 0;
+
+    @media (max-width: 768px) {
+        width: 100%;
+        height: 150px;
+    }
+`;
+
+const DestinationInfoSmall = styled.div`
+    flex: 1;
+`;
+
+const DestinationNameSmall = styled.h3`
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: ${props => props.theme?.colors?.text || '#1a202c'};
+    margin: 0 0 0.5rem 0;
+`;
+
+const DestinationRankSmall = styled.div`
+    font-size: 0.9rem;
+    color: ${props => props.theme?.colors?.textSecondary || '#718096'};
+    margin-bottom: 0.75rem;
+`;
+
+const DestinationScoresSmall = styled.div`
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 0.75rem;
+    font-size: 0.85rem;
+    color: ${props => props.theme?.colors?.textSecondary || '#718096'};
+    margin-top: 0.75rem;
+`;
+
+const ViewDetailsButtonSmall = styled.button`
+    padding: 0.5rem 1rem;
+    background: linear-gradient(135deg, #48bb78, #38a169);
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: 600;
+    font-size: 0.85rem;
+    transition: all 0.3s ease;
+    margin-top: 0.75rem;
+
+    &:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(72, 187, 120, 0.4);
+    }
+`;
+
+const SectionTitleSmall = styled.h2`
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: ${props => props.theme?.colors?.text || '#1a202c'};
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+`;
+
+const TopDestinationsGrid = styled.div`
+    display: grid;
+    /* Aim for 3 cards per row on larger screens while remaining responsive.
+       Use minmax so cards don't get too small on narrower tablet widths. */
+    grid-template-columns: repeat(3, minmax(220px, 1fr));
+    gap: 1.5rem;
+
+    /* Tablet: two columns where space is limited */
+    @media (max-width: 1024px) {
+        grid-template-columns: repeat(2, minmax(220px, 1fr));
+    }
+
+    /* Mobile: single column (use 768px to better match design system breakpoints) */
+    @media (max-width: 768px) {
+        grid-template-columns: 1fr;
+    }
+`;
+
 const ViewDetailsButton = styled.button`
     padding: 0.5rem 1rem;
     background: linear-gradient(135deg, #48bb78, #38a169);
@@ -283,22 +411,22 @@ const ViewDetailsButton = styled.button`
 
 export default function Recommendations() {
     const {theme} = useTheme();
+    const {showToast} = useNotification();
+    const { t } = useLocalization();
     const navigate = useNavigate();
     const [activeTab, setActiveTab] = useState<'table' | 'chart'>('table');
     const [recommendations, setRecommendations] = useState<Recommendation[]>([]);
     const [destinations, setDestinations] = useState<Map<number, Destination>>(new Map());
+    const [usersMap, setUsersMap] = useState<Map<number, { id: number; username?: string }>>(new Map());
     const [loading, setLoading] = useState(true);
-
-    useEffect(() => {
-        loadData();
-    }, []);
 
     const loadData = async () => {
         setLoading(true);
         try {
-            const [recsResponse, destsResponse] = await Promise.all([
+            const [recsResponse, destsResponse, usersResponse] = await Promise.all([
                 getAllRecommendations(),
                 getAllDestinations(),
+                getAllUsers(),
             ]);
 
             setRecommendations(recsResponse.data);
@@ -308,6 +436,10 @@ export default function Recommendations() {
                 destMap.set(dest.id, dest);
             });
             setDestinations(destMap);
+
+            const uMap = new Map();
+            usersResponse.data.forEach((u: any) => uMap.set(u.id, u));
+            setUsersMap(uMap);
         } catch (error) {
             console.error('Failed to load data:', error);
         } finally {
@@ -315,8 +447,31 @@ export default function Recommendations() {
         }
     };
 
-    const getDestinationName = (destId: number) => {
-        return destinations.get(destId)?.name || `Destination ${destId}`;
+    useEffect(() => {
+        loadData();
+    }, []);
+
+    const getDestinationId = (rec: Recommendation) => helperGetDestinationId(rec as any);
+
+    const getUserId = (rec: Recommendation) => helperGetUserId(rec as any);
+
+    const getDestinationName = (rec: Recommendation) => {
+        const destId = getDestinationId(rec);
+        if (rec.destination?.name) return rec.destination.name;
+        if (destId && destinations.has(destId)) {
+            return destinations.get(destId)?.name || `Destination ${destId}`;
+        }
+        return `Destination ${destId || 'Unknown'}`;
+    };
+
+    const getUserInfo = (rec: Recommendation) => {
+        const userId = getUserId(rec);
+        if (rec.user?.username) return `User #${userId} (${rec.user.username})`;
+        if (userId && usersMap.has(userId)) {
+            const user = usersMap.get(userId);
+            return user?.username ? `User #${userId} (${user.username})` : `User #${userId}`;
+        }
+        return `User #${userId || 'Unknown'}`;
     };
 
     const getAverageScore = () => {
@@ -328,15 +483,18 @@ export default function Recommendations() {
         const destScores: { [key: number]: { name: string; count: number; avgScore: number } } = {};
 
         recommendations.forEach(rec => {
-            if (!destScores[rec.destinationId]) {
-                destScores[rec.destinationId] = {
-                    name: getDestinationName(rec.destinationId),
+            const destId = getDestinationId(rec);
+            if (!destId) return;
+
+            if (!destScores[destId]) {
+                destScores[destId] = {
+                    name: getDestinationName(rec),
                     count: 0,
                     avgScore: 0,
                 };
             }
-            destScores[rec.destinationId].count += 1;
-            destScores[rec.destinationId].avgScore += rec.aiScore;
+            destScores[destId].count += 1;
+            destScores[destId].avgScore += rec.aiScore;
         });
 
         return Object.values(destScores)
@@ -348,12 +506,14 @@ export default function Recommendations() {
             .slice(0, 10);
     };
 
+    const getTop5DestinationsByAIScore = () => helperGetTop5(recommendations as any, destinations as any);
+
     if (loading) {
         return (
             <PageContainer theme={theme}>
                 <LoadingSpinner>
                     <div className="spinner"></div>
-                    <p>Loading recommendations...</p>
+                    <p>{t('recommendations.loading') ?? 'Loading recommendations...'}</p>
                 </LoadingSpinner>
             </PageContainer>
         );
@@ -363,13 +523,13 @@ export default function Recommendations() {
         return (
             <PageContainer theme={theme}>
                 <PageHeader>
-                    <PageTitle>⭐ AI Recommendations</PageTitle>
-                    <PageSubtitle>Personalized destination recommendations based on AI analysis</PageSubtitle>
+                    <PageTitle>⭐ {t('recommendations.title')}</PageTitle>
+                    <PageSubtitle>{t('recommendations.subtitle')}</PageSubtitle>
                 </PageHeader>
                 <EmptyState>
                     <div className="icon">🤖</div>
-                    <h3>No recommendations yet</h3>
-                    <p>Start exploring to get personalized recommendations based on your preferences.</p>
+                    <h3>{t('recommendations.empty_title') ?? 'No recommendations yet'}</h3>
+                    <p>{t('recommendations.empty_help') ?? 'Start exploring to get personalized recommendations based on your preferences.'}</p>
                 </EmptyState>
             </PageContainer>
         );
@@ -380,41 +540,74 @@ export default function Recommendations() {
     return (
         <PageContainer theme={theme}>
             <PageHeader>
-                <PageTitle>⭐ AI Recommendations</PageTitle>
-                <PageSubtitle>
-                    Personalized destination recommendations based on AI analysis and user preferences
-                </PageSubtitle>
+                <PageTitle>⭐ {t('recommendations.title')}</PageTitle>
+                <PageSubtitle>{t('recommendations.subtitle')}</PageSubtitle>
             </PageHeader>
 
             <StatGrid>
                 <StatCard>
                     <div className="stat-value">{recommendations.length}</div>
-                    <div className="stat-label">Total Recommendations</div>
+                    <div className="stat-label">{t('recommendations.total_recommendations') ?? 'Total Recommendations'}</div>
                 </StatCard>
                 <StatCard>
                     <div className="stat-value">{new Set(recommendations.map(r => r.destinationId)).size}</div>
-                    <div className="stat-label">Unique Destinations</div>
+                    <div className="stat-label">{t('recommendations.unique_destinations') ?? 'Unique Destinations'}</div>
                 </StatCard>
                 <StatCard>
                     <div className="stat-value">{getAverageScore()}</div>
-                    <div className="stat-label">Average AI Score</div>
+                    <div className="stat-label">{t('recommendations.average_ai_score') ?? 'Average AI Score'}</div>
                 </StatCard>
             </StatGrid>
 
-            <TabContainer theme={theme}>
+            {/* Eco Score Calculator */}
+            <div style={{margin: '2rem 0', padding: '2rem 0', borderRadius: '16px'}}>
+                <h2 style={{fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.5rem', color: theme.colors.text}}>
+                    ♻️ Carbon Sustainability Calculator
+                </h2>
+                <EcoScoreCard initialDistance={100} initialTransport="car"/>
+            </div>
+
+            {/* Route Calculator */}
+            <div style={{margin: '2rem 0', padding: '2rem 0', borderRadius: '16px'}}>
+                <h2 style={{fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.5rem', color: theme.colors.text}}>
+                    🗺️ Eco-Route Planner
+                </h2>
+                <CardGrid style={{gridTemplateColumns: '1fr'}}>
+                    <RouteCard
+                        startLat={51.5074}
+                        startLon={-0.1278}
+                        endLat={48.8566}
+                        endLon={2.3522}
+                    />
+                </CardGrid>
+            </div>
+
+            {/* Weather Information */}
+            <div style={{margin: '2rem 0', padding: '2rem 0', borderRadius: '16px'}}>
+                <h2 style={{fontSize: '1.5rem', fontWeight: 700, marginBottom: '1.5rem', color: theme.colors.text}}>
+                    🌤️ Destination Weather
+                </h2>
+                <CardGrid style={{gridTemplateColumns: 'repeat(auto-fill, minmax(350px, 1fr))'}}>
+                    <WeatherCard city="Berlin"/>
+                    <WeatherCard city="Frankfurt"/>
+                    <WeatherCard city="Munich"/>
+                </CardGrid>
+            </div>
+
+                <TabContainer theme={theme}>
                 <Tab
                     active={activeTab === 'table'}
                     onClick={() => setActiveTab('table')}
                     theme={theme}
                 >
-                    📊 Recommendations Table
+                    📊 {t('recommendations.table_tab') ?? 'Recommendations Table'}
                 </Tab>
                 <Tab
                     active={activeTab === 'chart'}
                     onClick={() => setActiveTab('chart')}
                     theme={theme}
                 >
-                    📈 Analytics Chart
+                    📈 {t('recommendations.chart_tab') ?? 'Analytics Chart'}
                 </Tab>
             </TabContainer>
 
@@ -422,31 +615,31 @@ export default function Recommendations() {
                 <Table theme={theme}>
                     <TableHead>
                         <TableRow>
-                            <TableHeader theme={theme}>Image</TableHeader>
-                            <TableHeader theme={theme}>Destination</TableHeader>
-                            <TableHeader theme={theme}>User ID</TableHeader>
-                            <TableHeader theme={theme}>AI Score</TableHeader>
-                            <TableHeader theme={theme}>Reason</TableHeader>
-                            <TableHeader theme={theme}>Action</TableHeader>
+                            <TableHeader theme={theme}>{t('table.image') ?? 'Image'}</TableHeader>
+                            <TableHeader theme={theme}>{t('table.destination') ?? 'Destination'}</TableHeader>
+                            <TableHeader theme={theme}>{t('table.user_id') ?? 'User ID'}</TableHeader>
+                            <TableHeader theme={theme}>{t('table.ai_score') ?? 'AI Score'}</TableHeader>
+                            <TableHeader theme={theme}>{t('table.reason') ?? 'Reason'}</TableHeader>
+                            <TableHeader theme={theme}>{t('table.action') ?? 'Action'}</TableHeader>
                         </TableRow>
                     </TableHead>
                     <tbody>
                     {recommendations.map((rec, index) => {
-                        const dest = destinations.get(rec.destinationId);
                         return (
                             <TableRow key={rec.id} theme={theme}>
                                 <ImageCell data-label="Image" theme={theme}>
-                                    <img src={`https://picsum.photos/60/40?random=${3000 + index}`} alt={dest?.name}/>
+                                    <img src={`https://picsum.photos/60/40?random=${3000 + index}`}
+                                         alt={getDestinationName(rec)}/>
                                 </ImageCell>
                                 <TableCell
                                     data-label="Destination"
                                     theme={theme}
                                     style={{fontWeight: 600}}
                                 >
-                                    {getDestinationName(rec.destinationId)}
+                                    {getDestinationName(rec)}
                                 </TableCell>
                                 <TableCell data-label="User ID" theme={theme}>
-                                    User #{rec.userId}
+                                    {getUserInfo(rec)}
                                 </TableCell>
                                 <ScoreCell data-label="AI Score" theme={theme}>
                                     <Badge color="green">{rec.aiScore}/100</Badge>
@@ -458,7 +651,26 @@ export default function Recommendations() {
                                     View Details →
                                 </ViewDetailsButton>
                                 <TableCell data-label="Action" theme={theme}>
+                                        <ViewDetailsButton onClick={() => {
+                                                const recId = rec.id;
+                                                if (recId === undefined || recId === null) {
+                                                    console.warn('Missing recommendation id', rec);
+                                                    (showToast ?? (() => {}))('Recommendation id is missing', 'error');
+                                                    return;
+                                                }
 
+                                                // Prefer navigating to the destination detail page (same behavior as Explore)
+                                                const destId = getDestinationId(rec);
+                                                if (destId !== null) {
+                                                    navigate(`/destination/${destId}`);
+                                                    return;
+                                                }
+
+                                                // Fallback to recommendation detail if no destination id available
+                                                navigate(`/recommendation/${recId}`);
+                                            }}>
+                                                View Details →
+                                            </ViewDetailsButton>
                                 </TableCell>
                             </TableRow>
                         );
@@ -526,6 +738,67 @@ export default function Recommendations() {
                     </ChartContainer>
                 </>
             )}
+
+            {/* Top 5 Destinations (by AI Score) */}
+            <TopDestinationsSection theme={theme}>
+                <SectionTitleSmall>🏆 Top 5 Destinations (by AI Score)</SectionTitleSmall>
+                <TopDestinationsGrid theme={theme}>
+                    {getTop5DestinationsByAIScore().map((dest, index) => (
+                        <DestinationCardSmall key={dest.id} theme={theme}>
+                            <DestinationImageSmall
+                                src={`https://picsum.photos/150/100?random=${dest.id + 6000}`}
+                                alt={dest.name}
+                            />
+                            <DestinationInfoSmall>
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'flex-start',
+                                    justifyContent: 'space-between'
+                                }}>
+                                    <div>
+                                        <DestinationRankSmall>#{index + 1} Top Destination</DestinationRankSmall>
+                                        <DestinationNameSmall>{dest.name}</DestinationNameSmall>
+                                        <p style={{
+                                            margin: '0.5rem 0 0 0',
+                                            fontSize: '0.9rem',
+                                            color: theme.colors.textSecondary
+                                        }}>
+                                            🌍 {dest.country}
+                                        </p>
+                                    </div>
+                                    <div style={{textAlign: 'right', minWidth: '120px'}}>
+                                        <Badge color="green" style={{fontSize: '1rem', padding: '0.5rem 1rem'}}>
+                                            AI Score: {dest.avgScore.toFixed(1)}/100
+                                        </Badge>
+                                        <div style={{
+                                            fontSize: '0.8rem',
+                                            color: theme.colors.textSecondary,
+                                            marginTop: '0.5rem'
+                                        }}>
+                                            {dest.count} recommendation{dest.count > 1 ? 's' : ''}
+                                        </div>
+                                    </div>
+                                </div>
+                                <DestinationScoresSmall>
+                                    <div>🏅 Avg Score: {dest.avgScore.toFixed(1)}/100</div>
+                                    <div>📊 Total Recs: {dest.count}</div>
+                                </DestinationScoresSmall>
+                                <ViewDetailsButtonSmall onClick={() => {
+                                    const destId = dest?.id;
+                                    if (destId === undefined || destId === null) {
+                                        console.warn('Attempted to navigate to destination with missing id', dest);
+                                        showToast('Destination id is missing for this item', 'error');
+                                        return;
+                                    }
+                                    navigate(`/destination/${destId}`);
+                                }}>
+                                    Explore This Destination →
+                                </ViewDetailsButtonSmall>
+                            </DestinationInfoSmall>
+                        </DestinationCardSmall>
+                    ))}
+                </TopDestinationsGrid>
+            </TopDestinationsSection>
         </PageContainer>
     );
 }

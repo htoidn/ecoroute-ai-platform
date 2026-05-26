@@ -75,6 +75,15 @@ npm run dev
 ```
 INFO: Vite dev server running at http://localhost:3000
 
+Note on testing and dev-dependencies:
+- The frontend includes testing libraries (Vitest and @testing-library/*). The project pins @testing-library/react to a version compatible with React 19. If you encounter peer-dependency errors during `npm install` (especially on older npm versions), run:
+
+```bash
+npm install --legacy-peer-deps
+```
+
+This will relax strict peer resolution for local development. For production Docker builds the image installs only production dependencies to avoid installing devDependencies.
+
 ### 3.  Run Backend
 ```bash
 cd backend
@@ -136,7 +145,7 @@ uvicorn main:app --reload
 ---
 
 ## 📜 License
-This project is for Acedemic and Research purposes.
+This project is for Academic and Research purposes.
 
 
 

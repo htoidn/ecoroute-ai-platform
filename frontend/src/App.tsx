@@ -2,13 +2,16 @@ import { Routes, Route, Navigate } from 'react-router-dom';
 import styled from 'styled-components';
 import { useAuth } from './contexts/AuthContext';
 import { useTheme, type ThemeType } from './contexts/ThemeContext';
+import { LocalizationProvider } from './contexts/LocalizationContext';
 import Navigation from './components/Navigation';
+import { NotificationProvider } from './contexts/NotificationContext';
 
 // Pages
 import Home from './pages/Home';
 import Explore from './pages/Explore';
 import Recommendations from './pages/Recommendations';
 import DestinationDetail from './pages/DestinationDetail';
+import RecommendationDetail from './pages/RecommendationDetail';
 import LoginPage from './pages/LoginPage';
 import RegisterPage from './pages/RegisterPage';
 import Settings from './pages/Settings';
@@ -60,8 +63,10 @@ function App() {
 
     return (
         <AppWrapper theme={theme}>
-            <Navigation />
-            <Routes>
+            <LocalizationProvider>
+                <NotificationProvider>
+                    <Navigation />
+                    <Routes>
                 {/* Public Routes */}
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
@@ -84,6 +89,10 @@ function App() {
                     element={<ProtectedRoute element={<DestinationDetail />} isAuthenticated={isAuthenticated} />}
                 />
                 <Route
+                    path="/recommendation/:id"
+                    element={<ProtectedRoute element={<RecommendationDetail />} isAuthenticated={isAuthenticated} />}
+                />
+                <Route
                     path="/settings"
                     element={<ProtectedRoute element={<Settings />} isAuthenticated={isAuthenticated} />}
                 />
@@ -98,7 +107,9 @@ function App() {
 
                 {/* Catch-all Route */}
                 <Route path="*" element={<Navigate to={isAuthenticated ? '/' : '/login'} replace />} />
-            </Routes>
+                    </Routes>
+                </NotificationProvider>
+            </LocalizationProvider>
 
             <style>{`
                 @keyframes spin {

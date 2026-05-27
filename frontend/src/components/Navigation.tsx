@@ -359,39 +359,43 @@ export default function Navigation({}: NavigationProps) {
                                     isActive={currentPath === '/'}
                                     onClick={() => handleNavigate('/')}
                                     title="Go to Home"
+                                    data-testid="nav-home"
                                 >
-                                    🏠 Home
+                                    Home
                                 </NavLink>
                                 <NavLink
                                     theme={theme}
                                     isActive={currentPath === '/explore'}
                                     onClick={() => handleNavigate('/explore')}
                                     title="Explore destinations"
+                                    data-testid="nav-explore"
                                 >
-                                    🗺️ Explore
+                                    Explore
                                 </NavLink>
                                 <NavLink
                                     theme={theme}
                                     isActive={currentPath === '/recommendations'}
                                     onClick={() => handleNavigate('/recommendations')}
                                     title="View recommendations"
+                                    data-testid="nav-recommendations"
                                 >
-                                    ⭐ Recommendations
+                                    Recommendations
                                 </NavLink>
                                 <NavLink
                                     theme={theme}
                                     isActive={currentPath === '/settings'}
                                     onClick={() => handleNavigate('/settings')}
                                     title="Settings"
+                                    data-testid="nav-settings"
                                 >
-                                    ⚙️ Settings
+                                    Settings
                                 </NavLink>
                             </AuthNavButtonsContainer>
                         )}
 
                         {/* Theme Toggle */}
-                        <ThemeToggle theme={theme} onClick={toggleTheme} title="Toggle Dark/Light mode">
-                            {theme.mode === 'light' ? '🌙 Dark Mode' : '☀️ Light Mode'}
+                        <ThemeToggle theme={theme} onClick={toggleTheme} title="Toggle Dark/Light mode" data-testid="theme-toggle">
+                            {theme.mode === 'light' ? 'Dark Mode' : 'Light Mode'}
                         </ThemeToggle>
 
                         {isAuthenticated ? (
@@ -399,8 +403,9 @@ export default function Navigation({}: NavigationProps) {
                                 <ProfileButton
                                     theme={theme}
                                     onClick={() => setDropdownOpen(!dropdownOpen)}
+                                    data-testid="profile-button"
                                 >
-                                    👤 {user?.username || 'Profile'}
+                                    {user?.username || 'Profile'}
                                 </ProfileButton>
                                 <DropdownMenu isOpen={dropdownOpen} theme={theme}>
                                     <DropdownItem
@@ -409,8 +414,9 @@ export default function Navigation({}: NavigationProps) {
                                             handleNavigate('/profile');
                                             setDropdownOpen(false);
                                         }}
+                                        data-testid="dropdown-my-profile"
                                     >
-                                        👤 My Profile
+                                        My Profile
                                     </DropdownItem>
                                     <DropdownItem
                                         theme={theme}
@@ -419,10 +425,10 @@ export default function Navigation({}: NavigationProps) {
                                             setDropdownOpen(false);
                                         }}
                                     >
-                                        ⚙️ Settings
+                                        Settings
                                     </DropdownItem>
-                                    <DropdownItem theme={theme} isDanger onClick={handleLogout}>
-                                        🚪 Logout
+                                    <DropdownItem theme={theme} isDanger onClick={handleLogout} data-testid="dropdown-logout">
+                                        Logout
                                     </DropdownItem>
                                 </DropdownMenu>
                             </ProfileDropdown>
@@ -432,15 +438,17 @@ export default function Navigation({}: NavigationProps) {
                                     variant="secondary"
                                     onClick={() => handleNavigate('/login')}
                                     style={{whiteSpace: 'nowrap'}}
+                                    data-testid="login-button"
                                 >
-                                    🔓 Login
+                                    Login
                                 </Button>
                                 <Button
                                     variant="primary"
                                     onClick={() => handleNavigate('/register')}
                                     style={{whiteSpace: 'nowrap'}}
+                                    data-testid="register-button"
                                 >
-                                    ✍️ Register
+                                    Register
                                 </Button>
                             </AuthButtons>
                         )}
@@ -465,29 +473,33 @@ export default function Navigation({}: NavigationProps) {
                                     theme={theme}
                                     isActive={currentPath === '/'}
                                     onClick={() => handleNavigate('/')}
+                                    data-testid="nav-home-mobile"
                                 >
-                                    🏠 Home
+                                    Home
                                 </NavLink>
                                 <NavLink
                                     theme={theme}
                                     isActive={currentPath === '/explore'}
                                     onClick={() => handleNavigate('/explore')}
+                                    data-testid="nav-explore-mobile"
                                 >
-                                    🗺️ Explore
+                                    Explore
                                 </NavLink>
                                 <NavLink
                                     theme={theme}
                                     isActive={currentPath === '/recommendations'}
                                     onClick={() => handleNavigate('/recommendations')}
+                                    data-testid="nav-recommendations-mobile"
                                 >
-                                    ⭐ Recommendations
+                                    Recommendations
                                 </NavLink>
                                 <NavLink
                                     theme={theme}
                                     isActive={currentPath === '/settings'}
                                     onClick={() => handleNavigate('/settings')}
+                                    data-testid="nav-settings-mobile"
                                 >
-                                    ⚙️ Settings
+                                    Settings
                                 </NavLink>
                             </NavLinks>
                         )}

@@ -1,0 +1,5 @@
+pytest
+selenium>=4.8.0
+webdriver-manager
+pytest-html
+

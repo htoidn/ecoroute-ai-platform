@@ -1,4 +1,4 @@
-name: EcoRoute Frontend CI (deploy & preview)
+name: Deploy Frontend to GitHub Pages
 
 on:
   push:
@@ -14,7 +14,6 @@ permissions:
   id-token: write
 
 jobs:
-  # Preview job for PRs — build the frontend and upload artifact for review (no deploy)
   preview:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
@@ -22,7 +21,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Use Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -41,15 +40,14 @@ jobs:
           name: frontend-preview
           path: ./frontend/dist
 
-  # Build and deploy job for pushes to main
   build-and-deploy:
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Use Node.js
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20'
@@ -69,6 +67,7 @@ jobs:
 
   deploy:
     needs: build-and-deploy
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
@@ -77,5 +76,3 @@ jobs:
       - name: Deploy to GitHub Pages
         id: deploy
         uses: actions/deploy-pages@v1
-        with: {}
-

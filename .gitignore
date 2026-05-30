@@ -129,5 +129,10 @@ helm/**/tmp/
 # Ignore all Markdown files
 *.md
 
-# Except the main README
+# Except critical documentation
 !README.md
+!GITHUB_ACTIONS_GCP_SETUP.md
+!GCP_SETUP_FOR_GITHUB_ACTIONS.md
+!GCP_DEPLOYMENT_GUIDE.md
+!GCP_QUICK_START.md
+!DEPLOYMENT_SUMMARY.md

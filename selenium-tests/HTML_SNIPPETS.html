@@ -1,0 +1,110 @@
+<!-- HTML Snippets Reference for EcoRoute Selenium Tests -->
+
+<!-- ============================================ -->
+<!-- LOGIN PAGE: http://localhost:3000/login   -->
+<!-- ============================================ -->
+
+<!-- USERNAME INPUT -->
+<!-- id="username" -->
+<input id="username" type="text" placeholder="Enter your username" />
+
+<!-- PASSWORD INPUT -->
+<!-- id="password" -->
+<input id="password" type="password" placeholder="Enter your password" />
+
+<!-- LOGIN BUTTON -->
+<!-- Contains "🚀 Start Your Journey" or "🔄 Signing In..." -->
+<button type="submit">🚀 Start Your Journey</button>
+
+<!-- ERROR MESSAGE (if login fails) -->
+<!-- Contains error text with ⚠️ emoji -->
+<div>⚠️ Invalid username or password</div>
+
+
+<!-- ============================================================================ -->
+<!-- HOME PAGE: http://localhost:3000/ (after successful login)             -->
+<!-- For admin users: http://localhost:3000/recommendations                    -->
+<!-- ============================================================================ -->
+
+<!-- PROFILE BUTTON (Dropdown Trigger) -->
+<!-- Contains "👤 admin" or other username -->
+<button>👤 admin</button>
+
+<!-- PROFILE DROPDOWN MENU (appears after clicking profile button) -->
+<div>
+  <!-- My Profile Button -->
+  <button>👤 My Profile</button>
+
+  <!-- Settings Button -->
+  <button>⚙️ Settings</button>
+
+  <!-- Logout Button -->
+  <button>🚪 Logout</button>
+</div>
+
+
+<!-- ======================================== -->
+<!-- SELENIUM SELECTORS FOR EACH ELEMENT  -->
+<!-- ======================================== -->
+
+<!-- LOGIN PAGE SELECTORS -->
+<!-- Username Input -->
+  <!-- By.ID: "username" -->
+  <!-- XPath: //input[@id='username'] -->
+
+<!-- Password Input -->
+  <!-- By.ID: "password" -->
+  <!-- XPath: //input[@id='password'] -->
+
+<!-- Login Button -->
+  <!-- XPath: //button[contains(., 'Start Your Journey')] -->
+  <!-- XPath: //button[contains(., '🚀')] -->
+  <!-- CSS: button[type="submit"] -->
+
+<!-- Error Message -->
+  <!-- XPath: //div[contains(., 'Invalid')] -->
+  <!-- XPath: //div[contains(., '⚠️')] -->
+
+
+<!-- HOME PAGE SELECTORS -->
+<!-- Profile Button (👤 admin) -->
+  <!-- XPath: //button[contains(., '👤')] -->
+  <!-- XPath: //button[contains(., '👤 admin')] -->
+
+<!-- My Profile Item -->
+  <!-- XPath: //button[contains(., 'My Profile')] -->
+
+<!-- Settings Item -->
+  <!-- XPath: //button[contains(., 'Settings')] -->
+  <!-- XPath: //button[contains(., '⚙️')] -->
+
+<!-- Logout Button -->
+  <!-- XPath: //button[contains(., 'Logout')] -->
+  <!-- XPath: //button[contains(., '🚪')] -->
+  <!-- XPath: //button[contains(., 'Logout') or contains(., '🚪')] -->
+
+
+<!-- ======================================== -->
+<!-- TEST FLOW SUMMARY                    -->
+<!-- ======================================== -->
+
+<!--
+LOGIN FLOW:
+1. Navigate to http://localhost:3000/login
+2. Find input with id="username"
+3. Enter "admin"
+4. Find input with id="password"
+5. Enter "admin123"
+6. Click button with text containing "Start Your Journey" or press Enter
+7. Wait for redirect to /recommendations or /
+8. Verify login successful
+
+LOGOUT FLOW:
+1. Starting from logged-in page
+2. Click button containing "👤"
+3. Wait for dropdown menu to appear
+4. Click button containing "Logout" or "🚪"
+5. Wait for redirect to /login
+6. Verify logout successful (back on login page)
+-->
+

@@ -1,0 +1,170 @@
+name: Deploy Services to GCP Cloud Run
+
+on:
+  workflow_run:
+    workflows: ["Build & Push Docker Images to GCP"]
+    types:
+      - completed
+    branches:
+      - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  REGISTRY: ${{ secrets.GCP_ARTIFACT_REGISTRY }}
+  REPOSITORY: ${{ secrets.GCP_ARTIFACT_REPO }}
+  PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
+  REGION: ${{ secrets.GCP_REGION }}
+  SQL_CONNECTION: ${{ secrets.CLOUD_SQL_CONNECTION_NAME }}
+  DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+
+jobs:
+  deploy-ai-service:
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Deploy AI Service to Cloud Run
+        run: |
+          gcloud run deploy ecoroute-ai-service \
+            --image ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/ai-service:latest \
+            --platform managed \
+            --region ${{ env.REGION }} \
+            --memory 512Mi \
+            --timeout 3600 \
+            --allow-unauthenticated \
+            --set-env-vars "PORT=8000" \
+            --quiet
+
+      - name: Get AI Service URL
+        run: |
+          AI_SERVICE_URL=$(gcloud run services describe ecoroute-ai-service \
+            --platform managed \
+            --region ${{ env.REGION }} \
+            --format='value(status.url)')
+          echo "AI_SERVICE_URL=$AI_SERVICE_URL" >> $GITHUB_ENV
+          echo "AI Service deployed at: $AI_SERVICE_URL"
+
+  deploy-backend:
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Wait for AI Service deployment
+        run: sleep 10
+
+      - name: Get AI Service URL
+        run: |
+          AI_SERVICE_URL=$(gcloud run services describe ecoroute-ai-service \
+            --platform managed \
+            --region ${{ env.REGION }} \
+            --format='value(status.url)')
+          echo "AI_SERVICE_URL=$AI_SERVICE_URL" >> $GITHUB_ENV
+
+      - name: Deploy Backend to Cloud Run
+        run: |
+          gcloud run deploy ecoroute-backend \
+            --image ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/backend:latest \
+            --platform managed \
+            --region ${{ env.REGION }} \
+            --memory 512Mi \
+            --timeout 3600 \
+            --allow-unauthenticated \
+            --add-cloudsql-instances ${{ env.SQL_CONNECTION }} \
+            --set-env-vars "SPRING_DATASOURCE_URL=jdbc:postgresql://127.0.0.1:5432/ecoroute,SPRING_DATASOURCE_USERNAME=ecoroute_user,SPRING_DATASOURCE_PASSWORD=${{ env.DATABASE_PASSWORD }},AI_SERVICE_URL=${{ env.AI_SERVICE_URL }},SPRING_PROFILES_ACTIVE=gcp" \
+            --quiet
+
+      - name: Get Backend URL
+        run: |
+          BACKEND_URL=$(gcloud run services describe ecoroute-backend \
+            --platform managed \
+            --region ${{ env.REGION }} \
+            --format='value(status.url)')
+          echo "BACKEND_URL=$BACKEND_URL" >> $GITHUB_ENV
+          echo "Backend deployed at: $BACKEND_URL"
+
+  update-frontend-config:
+    needs: [deploy-ai-service, deploy-backend]
+    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      id-token: write
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Authenticate to Google Cloud
+        uses: google-github-actions/auth@v2
+        with:
+          credentials_json: ${{ secrets.GCP_SA_KEY }}
+
+      - name: Set up Cloud SDK
+        uses: google-github-actions/setup-gcloud@v2
+
+      - name: Get Backend URL
+        run: |
+          BACKEND_URL=$(gcloud run services describe ecoroute-backend \
+            --platform managed \
+            --region ${{ env.REGION }} \
+            --format='value(status.url)')
+          echo "BACKEND_URL=$BACKEND_URL" >> $GITHUB_ENV
+
+      - name: Update frontend .env.production
+        run: |
+          echo "VITE_API_URL=${{ env.BACKEND_URL }}" > frontend/.env.production
+
+      - name: Commit and push updated config
+        run: |
+          git config user.name "GitHub Actions"
+          git config user.email "actions@github.com"
+          git add frontend/.env.production
+          git commit -m "Auto-update backend URL after GCP deployment" || echo "No changes to commit"
+          git push origin main || echo "Push failed (no changes)"
+
+  notify-deployment:
+    needs: [deploy-ai-service, deploy-backend, update-frontend-config]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Deployment Summary
+        run: |
+          echo "🚀 Deployment Complete!"
+          echo ""
+          echo "Frontend: https://htoidn.github.io/ecoroute-ai-platform"
+          echo "Backend: https://ecoroute-backend-*.uc.a.run.app"
+          echo "AI Service: https://ecoroute-ai-service-*.uc.a.run.app"
+          echo ""
+          echo "Check Actions tab for full logs"

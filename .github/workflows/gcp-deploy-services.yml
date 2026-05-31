@@ -2,7 +2,7 @@ name: Deploy Services to GCP Cloud Run
 
 on:
   workflow_run:
-    workflows: ["Build & Push Docker Images to GCP"]
+    workflows: [ "Build & Push Docker Images to GCP" ]
     types:
       - completed
     branches:
@@ -20,185 +20,149 @@ env:
   REGION: ${{ secrets.GCP_REGION }}
   SQL_CONNECTION: ${{ secrets.CLOUD_SQL_CONNECTION_NAME }}
   DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
-  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   deploy-ai-service:
     if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4.2.1
+      - uses: actions/checkout@v4
 
       - name: Authenticate to Google Cloud
         id: auth
-        uses: google-github-actions/auth@v2.1.7
+        uses: google-github-actions/auth@v2
+        continue-on-error: true
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account_email: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
-        continue-on-error: true
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
 
-      - name: Set up Cloud SDK
+      - name: Setup gcloud
         if: steps.auth.outcome == 'success'
-        uses: google-github-actions/setup-gcloud@v2.1
+        uses: google-github-actions/setup-gcloud@v2
 
-      - name: Deploy AI Service to Cloud Run
+      - name: Deploy AI Service
         if: steps.auth.outcome == 'success'
         run: |
           gcloud run deploy ecoroute-ai-service \
-            --image ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/ai-service:latest \
+            --image ${REGISTRY}/${PROJECT_ID}/${REPOSITORY}/ai-service:latest \
             --platform managed \
-            --region ${{ env.REGION }} \
+            --region ${REGION} \
             --memory 512Mi \
             --timeout 3600 \
             --allow-unauthenticated \
-            --set-env-vars "PORT=8000" \
+            --set-env-vars PORT=8000 \
             --quiet
 
-      - name: Get AI Service URL
-        if: steps.auth.outcome == 'success'
-        run: |
-          AI_SERVICE_URL=$(gcloud run services describe ecoroute-ai-service \
-            --platform managed \
-            --region ${{ env.REGION }} \
-            --format='value(status.url)')
-          echo "AI_SERVICE_URL=$AI_SERVICE_URL" >> $GITHUB_ENV
-          echo "AI Service deployed at: $AI_SERVICE_URL"
-
-      - name: Deployment Skipped
-        if: steps.auth.outcome == 'failure'
-        run: echo "⚠️ GCP credentials not configured. Skipping deployment. To enable GCP deployment, configure GCP_WORKLOAD_IDENTITY_PROVIDER and GCP_SERVICE_ACCOUNT_EMAIL secrets."
+      - name: Skip Deployment
+        if: steps.auth.outcome != 'success'
+        run: echo "GCP not configured. Skipping AI deployment."
 
   deploy-backend:
+    needs: deploy-ai-service
     if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      id-token: write
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4.2.1
+      - uses: actions/checkout@v4
 
       - name: Authenticate to Google Cloud
         id: auth
-        uses: google-github-actions/auth@v2.1.7
+        uses: google-github-actions/auth@v2
+        continue-on-error: true
         with:
           workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account_email: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
-        continue-on-error: true
+          service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
 
-      - name: Set up Cloud SDK
+      - name: Setup gcloud
         if: steps.auth.outcome == 'success'
-        uses: google-github-actions/setup-gcloud@v2.1
-
-      - name: Wait for AI Service deployment
-        if: steps.auth.outcome == 'success'
-        run: sleep 10
+        uses: google-github-actions/setup-gcloud@v2
 
       - name: Get AI Service URL
         if: steps.auth.outcome == 'success'
         run: |
           AI_SERVICE_URL=$(gcloud run services describe ecoroute-ai-service \
-            --platform managed \
-            --region ${{ env.REGION }} \
+            --region ${REGION} \
             --format='value(status.url)')
           echo "AI_SERVICE_URL=$AI_SERVICE_URL" >> $GITHUB_ENV
 
-      - name: Deploy Backend to Cloud Run
+      - name: Deploy Backend
         if: steps.auth.outcome == 'success'
         run: |
           gcloud run deploy ecoroute-backend \
-            --image ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/backend:latest \
+            --image ${REGISTRY}/${PROJECT_ID}/${REPOSITORY}/backend:latest \
             --platform managed \
-            --region ${{ env.REGION }} \
+            --region ${REGION} \
             --memory 512Mi \
             --timeout 3600 \
             --allow-unauthenticated \
-            --add-cloudsql-instances ${{ env.SQL_CONNECTION }} \
-            --set-env-vars "SPRING_DATASOURCE_URL=jdbc:postgresql://127.0.0.1:5432/ecoroute,SPRING_DATASOURCE_USERNAME=ecoroute_user,SPRING_DATASOURCE_PASSWORD=${{ env.DATABASE_PASSWORD }},AI_SERVICE_URL=${{ env.AI_SERVICE_URL }},SPRING_PROFILES_ACTIVE=gcp" \
-            --quiet
+            --add-cloudsql-instances ${SQL_CONNECTION} \
+            --set-env-vars SPRING_DATASOURCE_URL=jdbc:postgresql://127.0.0.1:5432/ecoroute,\
+            SPRING_DATASOURCE_USERNAME=ecoroute_hdnh,\
+            SPRING_DATASOURCE_PASSWORD=${DATABASE_PASSWORD},\
+            AI_SERVICE_URL=${AI_SERVICE_URL},\
+            SPRING_PROFILES_ACTIVE=gcp \
+          --quiet
 
-      - name: Get Backend URL
-        if: steps.auth.outcome == 'success'
-        run: |
-          BACKEND_URL=$(gcloud run services describe ecoroute-backend \
-            --platform managed \
-            --region ${{ env.REGION }} \
-            --format='value(status.url)')
-          echo "BACKEND_URL=$BACKEND_URL" >> $GITHUB_ENV
-          echo "Backend deployed at: $BACKEND_URL"
+      - name: Skip Deployment
+        if: steps.auth.outcome != 'success'
+        run: echo "GCP not configured. Skipping backend deployment."
 
-      - name: Deployment Skipped
-        if: steps.auth.outcome == 'failure'
-        run: echo "⚠️ GCP credentials not configured. Skipping deployment. To enable GCP deployment, configure GCP_WORKLOAD_IDENTITY_PROVIDER and GCP_SERVICE_ACCOUNT_EMAIL secrets."
+update-frontend-config:
+  needs: deploy-backend
+  if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
+  runs-on: ubuntu-latest
 
-  update-frontend-config:
-    needs: [deploy-ai-service, deploy-backend]
-    if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      id-token: write
+  permissions:
+    contents: write
 
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4.2.1
+  steps:
+    - uses: actions/checkout@v4
 
-      - name: Authenticate to Google Cloud
-        id: auth
-        uses: google-github-actions/auth@v2.1.7
-        with:
-          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
-          service_account_email: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
-        continue-on-error: true
+    - name: Authenticate to Google Cloud
+      id: auth
+      uses: google-github-actions/auth@v2
+      continue-on-error: true
+      with:
+        workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+        service_account: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
 
-      - name: Set up Cloud SDK
-        if: steps.auth.outcome == 'success'
-        uses: google-github-actions/setup-gcloud@v2.1
+    - name: Setup gcloud
+      if: steps.auth.outcome == 'success'
+      uses: google-github-actions/setup-gcloud@v2
 
-      - name: Get Backend URL
-        if: steps.auth.outcome == 'success'
-        run: |
-          BACKEND_URL=$(gcloud run services describe ecoroute-backend \
-            --platform managed \
-            --region ${{ env.REGION }} \
-            --format='value(status.url)')
-          echo "BACKEND_URL=$BACKEND_URL" >> $GITHUB_ENV
+    - name: Get Backend URL
+      if: steps.auth.outcome == 'success'
+      run: |
+        BACKEND_URL=$(gcloud run services describe ecoroute-backend \
+          --region ${REGION} \
+          --format='value(status.url)')
+        echo "VITE_API_URL=$BACKEND_URL" > frontend/.env.production
 
-      - name: Update frontend .env.production
-        if: steps.auth.outcome == 'success'
-        run: |
-          echo "VITE_API_URL=${{ env.BACKEND_URL }}" > frontend/.env.production
+    - name: Commit Changes
+      if: steps.auth.outcome == 'success'
+      run: |
+        git config user.name "github-actions"
+        git config user.email "actions@github.com"        
+        git add frontend/.env.production        
+        git diff --cached --quiet || git commit -m "Update frontend backend URL"        
+        git push
 
-      - name: Commit and push updated config
-        if: steps.auth.outcome == 'success'
-        run: |
-          git config user.name "GitHub Actions"
-          git config user.email "actions@github.com"
-          git add frontend/.env.production
-          git commit -m "Auto-update backend URL after GCP deployment" || echo "No changes to commit"
-          git push origin main || echo "Push failed (no changes)"
+    - name: Skip Update
+      if: steps.auth.outcome != 'success'
+      run: echo "GCP not configured. Skipping frontend update."
 
-      - name: Update Skipped
-        if: steps.auth.outcome == 'failure'
-        run: echo "⚠️ GCP credentials not configured. Skipping frontend config update."
+notify-deployment:
+  needs:
+    - deploy-ai-service
+    - deploy-backend
+    - update-frontend-config
+  if: always()
+  runs-on: ubuntu-latest
 
-  notify-deployment:
-    needs: [deploy-ai-service, deploy-backend, update-frontend-config]
-    if: always()
-    runs-on: ubuntu-latest
-    steps:
-      - name: Deployment Summary
-        run: |
-          echo "🚀 Deployment Complete!"
-          echo ""
-          echo "Frontend: https://htoidn.github.io/ecoroute-ai-platform"
-          echo "Backend: https://ecoroute-backend-*.uc.a.run.app"
-          echo "AI Service: https://ecoroute-ai-service-*.uc.a.run.app"
-          echo ""
-          echo "Check Actions tab for full logs"
+  steps:
+    - name: Deployment Summary
+      run: |
+        echo "Deployment workflow completed."
+        echo "If GCP credentials are configured, services were deployed."
+        echo "If not, deployment steps were skipped."

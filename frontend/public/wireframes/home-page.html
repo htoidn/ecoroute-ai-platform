@@ -1,0 +1,538 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Wireframe – Home Page</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Courier New', monospace;
+    background: #f0ede8;
+    color: #1a1a1a;
+  }
+
+  /* ── Helpers ── */
+  .label {
+    font-size: 9px;
+    font-family: 'Courier New', monospace;
+    color: #e74c3c;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .section-title {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .8px;
+    text-transform: uppercase;
+    margin-bottom: 10px;
+    padding-bottom: 4px;
+    border-bottom: 2px solid #1a1a1a;
+    display: flex; align-items: center; gap: 8px;
+  }
+  .section-title .icon-sq { width: 14px; height: 14px; border: 2px solid #1a1a1a; border-radius: 2px; background: repeating-linear-gradient(45deg,#ccc 0,#ccc 2px,transparent 2px,transparent 4px); flex-shrink: 0; }
+
+  .img-placeholder {
+    background: repeating-linear-gradient(135deg,#dedad4 0,#dedad4 4px,#cfcbc5 4px,#cfcbc5 8px);
+    border: 1.5px solid #bbb;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px; color: #999; text-align: center;
+  }
+  .box-outline {
+    border: 1.5px solid #ccc;
+    border-radius: 3px;
+    background: #fff;
+  }
+  .btn-wf {
+    border: 1.5px solid #1a1a1a;
+    padding: 4px 12px;
+    font-size: 10px;
+    font-family: 'Courier New', monospace;
+    background: #fff;
+    cursor: pointer;
+    border-radius: 2px;
+  }
+  .btn-wf.filled { background: #1a1a1a; color: #fff; }
+  .btn-wf.green { background: repeating-linear-gradient(45deg,#2a2a2a 0,#2a2a2a 2px,#444 2px,#444 5px); color: #fff; border: 2px solid #1a1a1a; }
+  .callout {
+    background: #fff8e1;
+    border: 1px solid #f0c040;
+    border-left: 3px solid #f0c040;
+    padding: 5px 9px;
+    font-size: 9px;
+    color: #555;
+    border-radius: 2px;
+  }
+  .callout strong { display: block; font-size: 9px; color: #b8860b; text-transform: uppercase; margin-bottom: 2px; }
+
+  /* ── Page header ── */
+  .page-header {
+    padding: 18px 32px 10px;
+    border-bottom: 1.5px dashed #bbb;
+    display: flex; align-items: baseline; gap: 16px;
+  }
+  .page-header h1 { font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+  .page-header span { font-size: 10px; color: #777; }
+
+  /* ── Browser chrome ── */
+  .browser { max-width: 960px; margin: 24px auto; border: 2px solid #1a1a1a; border-radius: 6px; overflow: hidden; box-shadow: 4px 4px 0 #1a1a1a; }
+  .browser-bar { background: #d6d2cc; border-bottom: 2px solid #1a1a1a; padding: 8px 12px; display: flex; align-items: center; gap: 10px; }
+  .dot { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #1a1a1a; background: #fff; display: inline-block; }
+  .url-bar { flex: 1; background: #fff; border: 1.5px solid #1a1a1a; border-radius: 3px; padding: 3px 10px; font-size: 10px; color: #555; }
+
+  /* ── Navbar ── */
+  .nav { background: #fff; border-bottom: 2px solid #1a1a1a; padding: 10px 28px; display: flex; align-items: center; gap: 12px; }
+  .nav-logo { display: flex; align-items: center; gap: 7px; }
+  .nav-logo .circle { width: 13px; height: 13px; border-radius: 50%; border: 2px solid #1a1a1a; background: repeating-linear-gradient(45deg,#ccc 0,#ccc 2px,transparent 2px,transparent 5px); }
+  .nav-logo .logo-text { font-size: 13px; font-weight: 700; }
+  .spacer { flex: 1; }
+  .nav-link { font-size: 10px; padding: 4px 10px; border-radius: 2px; border: 1px solid transparent; }
+  .nav-link.active { background: repeating-linear-gradient(45deg,#2a2a2a 0,#2a2a2a 2px,#444 2px,#444 5px); color: #fff; }
+
+  /* ── EcoRoute banner ── */
+  .ecoroute {
+    background: repeating-linear-gradient(135deg,#c8c4be 0,#c8c4be 5px,#bfbbb5 5px,#bfbbb5 10px);
+    border-bottom: 2px solid #1a1a1a;
+    padding: 44px 40px 36px;
+    text-align: center;
+    position: relative;
+  }
+  .ecoroute h2 { font-size: 24px; font-weight: 700; letter-spacing: 1px; }
+  .ecoroute-sub { font-size: 10px; color: #666; margin: 8px auto 20px; max-width: 460px; line-height: 1.6; }
+  .search-bar {
+    display: flex; gap: 0;
+    max-width: 680px; margin: 0 auto;
+    border: 2px solid #1a1a1a;
+    border-radius: 3px; overflow: hidden;
+    background: #fff;
+  }
+  .search-bar input {
+    flex: 1; padding: 10px 14px; font-size: 10px; border: none; outline: none; font-family: 'Courier New', monospace; color: #999;
+  }
+  .search-bar .search-btn { background: repeating-linear-gradient(45deg,#2a2a2a 0,#2a2a2a 2px,#444 2px,#444 5px); color: #fff; padding: 10px 20px; font-size: 10px; font-family: 'Courier New', monospace; font-weight: 700; border: none; cursor: pointer; border-left: 2px solid #1a1a1a; }
+
+  /* ── Content wrapper ── */
+  .content { background: #f8f5f0; padding: 28px 32px; }
+
+  /* ── Card grid ── */
+  .card-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 28px; }
+  .dest-card { background: #fff; border: 1.5px solid #ccc; border-radius: 4px; overflow: hidden; }
+  .dest-card .thumb { height: 88px; }
+  .dest-card .card-body { padding: 10px; }
+  .dest-card .city { font-size: 11px; font-weight: 700; }
+  .dest-card .country { font-size: 9px; color: #888; margin-bottom: 4px; }
+  .dest-card .desc { font-size: 8px; color: #999; margin-bottom: 8px; line-height: 1.4; }
+  .badge { display: inline-block; font-size: 8px; background: #e8f5e9; border: 1px solid #a5d6a7; color: #2e7d32; padding: 2px 6px; border-radius: 2px; margin-bottom: 6px; }
+  .badge.ai { background: #e3f2fd; border-color: #90caf9; color: #1565c0; }
+  .meta-row { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 8px; }
+  .meta-item { font-size: 7px; color: #888; display: flex; align-items: center; gap: 3px; }
+  .meta-item .m-icon { width: 8px; height: 8px; border: 1px dashed #aaa; border-radius: 2px; }
+  .explore-btn { width: 100%; font-size: 8px; padding: 5px; background: repeating-linear-gradient(45deg,#2a2a2a 0,#2a2a2a 2px,#444 2px,#444 5px); color: #fff; border: none; cursor: pointer; font-family: 'Courier New', monospace; }
+
+  /* ── Weather section ── */
+  .weather-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 14px; }
+  .weather-card { background: #fff; border: 1.5px solid #ccc; border-radius: 4px; padding: 14px; }
+  .weather-card .wc-title { font-size: 10px; font-weight: 700; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
+  .weather-card .wc-title .w-icon { width: 12px; height: 12px; border: 1.5px dashed #aaa; border-radius: 50%; }
+  .weather-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 8px; }
+  .weather-stat .ws-label { font-size: 7px; color: #aaa; }
+  .weather-stat .ws-value { font-size: 14px; font-weight: 700; }
+  .weather-cond { text-align: center; font-size: 9px; color: #888; border-top: 1px dashed #ddd; padding-top: 6px; }
+
+  /* ── Carbon + Eco-Route sections ── */
+  .tool-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 28px; }
+  .tool-card { background: #fff; border: 1.5px solid #ccc; border-radius: 4px; padding: 16px; }
+  .tool-card .tc-title { font-size: 11px; font-weight: 700; margin-bottom: 12px; display: flex; align-items: center; gap: 7px; }
+  .tool-card .tc-title .t-icon { width: 14px; height: 14px; border: 1.5px dashed #aaa; border-radius: 50%; }
+  .transport-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .transport-btn { border: 1.5px solid #ccc; padding: 7px; text-align: center; font-size: 9px; border-radius: 2px; }
+  .result-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px; }
+  .result-box { border: 1.5px solid #ccc; padding: 8px 10px; border-radius: 3px; }
+  .result-box .rb-label { font-size: 8px; color: #aaa; }
+  .result-box .rb-value { font-size: 13px; font-weight: 700; margin: 2px 0; }
+  .stars { display: flex; gap: 3px; }
+  .star { width: 12px; height: 12px; border: 1.5px solid #ccc; clip-path: polygon(50% 0,61% 35%,98% 35%,68% 57%,79% 91%,50% 70%,21% 91%,32% 57%,2% 35%,39% 35%); background: repeating-linear-gradient(45deg,#ddd 0,#ddd 2px,#eee 2px,#eee 4px); }
+  .calc-btn { width: 100%; padding: 9px; background: repeating-linear-gradient(45deg,#2a2a2a 0,#2a2a2a 2px,#444 2px,#444 5px); color: #fff; border: 2px solid #1a1a1a; font-size: 9px; font-family: 'Courier New', monospace; cursor: pointer; margin-bottom: 8px; }
+  .eco-msg { font-size: 8px; text-align: center; color: #555; padding: 6px; background: #e8f5e9; border: 1px solid #a5d6a7; border-radius: 2px; }
+
+  /* route fields */
+  .route-fields { display: grid; grid-template-columns: 1fr 1fr 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .route-field label { font-size: 8px; color: #888; display: block; margin-bottom: 3px; }
+  .route-field input-wf { display: block; border: 1.5px solid #ccc; padding: 6px 8px; font-size: 9px; color: #999; font-family: 'Courier New', monospace; border-radius: 2px; width: 100%; background: #fafafa; }
+
+  /* quick overview */
+  .overview-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 14px; }
+  .overview-card { background: #fff; border: 1.5px solid #ccc; border-radius: 4px; padding: 18px; text-align: center; }
+  .overview-card .ov-icon { width: 28px; height: 28px; border: 2px dashed #aaa; border-radius: 50%; margin: 0 auto 8px; }
+  .overview-card .ov-number { font-size: 22px; font-weight: 700; }
+  .overview-card .ov-label { font-size: 9px; color: #888; }
+
+  /* ── Callout band ── */
+  .callout-band {
+    max-width: 960px; margin: 10px auto 24px;
+    display: flex; flex-wrap: wrap; gap: 10px; padding: 0 12px;
+  }
+  .callout-band .callout { flex: 1; min-width: 150px; }
+
+  /* ── Legend ── */
+  .legend {
+    max-width: 960px; margin: 0 auto 32px;
+    padding: 12px 16px; background: #fff; border: 1px dashed #bbb;
+    display: flex; gap: 24px; flex-wrap: wrap;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 9px; color: #666; }
+  .leg-swatch { width: 20px; height: 12px; border: 1px solid #bbb; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Wireframe — Home Page</h1>
+  <span>EcoRoute AI · v1.0 · Page 2 of 2</span>
+  <span class="label" style="margin-left:auto;">⬤ Red = annotation  ⬤ Yellow = callout</span>
+</div>
+
+<!-- Browser Shell -->
+<div class="browser">
+  <div class="browser-bar">
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    <div class="url-bar">ecoroute.ai / home</div>
+  </div>
+
+  <!-- ── NAVBAR ── -->
+  <div class="nav">
+    <div class="nav-logo">
+      <div class="circle"></div>
+      <span class="logo-text">EcoRoute AI</span>
+    </div>
+    <div class="spacer"></div>
+    <span class="nav-link active">Home</span>
+    <span class="nav-link">Explore</span>
+    <span class="nav-link">Recommendations</span>
+    <span class="nav-link">Settings</span>
+    <div class="btn-wf" style="font-size:10px;">Dark Mode</div>
+    <div class="btn-wf" style="font-size:10px;">admin ▾</div>
+  </div>
+  <div style="background:#fff;padding:3px 28px 6px;border-bottom:1px dashed #ddd;display:flex;gap:20px;">
+    <span class="label" style="color:#e74c3c;">① Active nav: Home</span>
+    <span class="label" style="color:#e74c3c;">② Explore link</span>
+    <span class="label" style="color:#e74c3c;">③ Recommendations</span>
+    <span class="label" style="color:#e74c3c;">④ Settings</span>
+    <span class="label" style="color:#e74c3c;margin-left:auto;">⑤ Admin dropdown</span>
+  </div>
+
+  <!-- ── ECOROUTE ── -->
+  <div class="ecoroute">
+    <div style="position:absolute;top:10px;left:12px;"><span class="label" style="color:#e74c3c;">⑥ EcoRoute banner (gradient bg)</span></div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:8px;">
+      <div style="width:20px;height:20px;border:2px dashed #888;border-radius:50%;"></div>
+      <h2>Smart Sustainable Tourism</h2>
+    </div>
+    <div class="ecoroute-sub">Discover eco-friendly destinations tailored to your preferences. Find the perfect balance between sustainability, cost, and comfort with AI-powered recommendations.</div>
+    <div class="search-bar">
+      <input type="text" value="Search destinations (e.g., Berlin, eco-friendly, low-cost)..." readonly />
+      <button class="search-btn">⊕ Search Now</button>
+    </div>
+    <div style="margin-top:8px;"><span class="label" style="color:#e74c3c;">⑦ Full-width search bar + CTA button</span></div>
+  </div>
+
+  <!-- ── CONTENT ── -->
+  <div class="content">
+
+    <!-- AI RECOMMENDATIONS -->
+    <div class="section-title">
+      <div class="icon-sq"></div> AI Recommendations
+    </div>
+    <div style="margin-bottom:6px;"><span class="label" style="color:#e74c3c;">⑧ Section: 4-column destination cards with AI score</span></div>
+    <div class="card-grid" style="margin-bottom:8px;">
+      <!-- Card × 4 -->
+      <div class="dest-card">
+        <div class="thumb img-placeholder">Image</div>
+        <div class="card-body">
+          <div class="city">Freiburg</div>
+          <div class="country">Germany · 👤 User #19</div>
+          <div class="desc">Best sustainability score</div>
+          <div class="badge ai">AI Score: 84%</div>
+          <div class="meta-row">
+            <div class="meta-item"><div class="m-icon"></div> Sustainability: 95%</div>
+            <div class="meta-item"><div class="m-icon"></div> Cost: $80</div>
+          </div>
+          <button class="explore-btn">View Details →</button>
+        </div>
+      </div>
+      <div class="dest-card">
+        <div class="thumb img-placeholder">Image</div>
+        <div class="card-body">
+          <div class="city">Münster</div>
+          <div class="country">Germany · 👤 User #19</div>
+          <div class="desc">Top cycling · Exceptional eco credentials</div>
+          <div class="badge ai">AI Score: 85%</div>
+          <div class="meta-row">
+            <div class="meta-item"><div class="m-icon"></div> Sustainability: 96%</div>
+            <div class="meta-item"><div class="m-icon"></div> Cost: $64</div>
+          </div>
+          <button class="explore-btn">View Details →</button>
+        </div>
+      </div>
+      <div class="dest-card">
+        <div class="thumb img-placeholder">Image</div>
+        <div class="card-body">
+          <div class="city">Kiel</div>
+          <div class="country">Germany · 👤 User #8</div>
+          <div class="desc">Exceptional cycling infrastructure</div>
+          <div class="badge ai">AI Score: 85%</div>
+          <div class="meta-row">
+            <div class="meta-item"><div class="m-icon"></div> Sustainability: 87%</div>
+            <div class="meta-item"><div class="m-icon"></div> Cost: $74</div>
+          </div>
+          <button class="explore-btn">View Details →</button>
+        </div>
+      </div>
+      <div class="dest-card">
+        <div class="thumb img-placeholder">Image</div>
+        <div class="card-body">
+          <div class="city">Hannover</div>
+          <div class="country">Germany · 👤 User #4</div>
+          <div class="desc">Quiet and low crowd</div>
+          <div class="badge ai">AI Score: 86%</div>
+          <div class="meta-row">
+            <div class="meta-item"><div class="m-icon"></div> Sustainability: 87%</div>
+            <div class="meta-item"><div class="m-icon"></div> Cost: $88</div>
+          </div>
+          <button class="explore-btn">View Details →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- TOP ECO DESTINATIONS -->
+    <div class="section-title" style="margin-top:20px;">
+      <div class="icon-sq"></div> Top Eco-Friendly Destinations
+    </div>
+    <div style="margin-bottom:6px;"><span class="label" style="color:#e74c3c;">⑨ Section: 4-column cards with sustainability score + transport/crowd meta</span></div>
+    <div class="card-grid" style="margin-bottom:8px;">
+      <div class="dest-card">
+        <div class="thumb img-placeholder">Image</div>
+        <div class="card-body">
+          <div class="city">Freiburg</div>
+          <div class="country">Germany</div>
+          <div class="desc">Germany's greenest solar-powered city</div>
+          <div class="badge">Sustainability: 95/100</div>
+          <div class="meta-row">
+            <div class="meta-item"><div class="m-icon"></div> Transport: 96%</div>
+            <div class="meta-item"><div class="m-icon"></div> Crowd: 40</div>
+          </div>
+          <div class="meta-row">
+            <div class="meta-item"><div class="m-icon"></div> Best: Spring</div>
+            <div class="meta-item"><div class="m-icon"></div> Cost: 60</div>
+          </div>
+          <button class="explore-btn">Explore More →</button>
+        </div>
+      </div>
+      <div class="dest-card">
+        <div class="thumb img-placeholder">Image</div>
+        <div class="card-body">
+          <div class="city">Münster</div>
+          <div class="country">Germany</div>
+          <div class="desc">Top cycling city with strong sustainability</div>
+          <div class="badge">Sustainability: 94/100</div>
+          <div class="meta-row">
+            <div class="meta-item"><div class="m-icon"></div> Transport: 95%</div>
+            <div class="meta-item"><div class="m-icon"></div> Crowd: 45</div>
+          </div>
+          <div class="meta-row">
+            <div class="meta-item"><div class="m-icon"></div> Best: Spring</div>
+            <div class="meta-item"><div class="m-icon"></div> Cost: 58</div>
+          </div>
+          <button class="explore-btn">Explore More →</button>
+        </div>
+      </div>
+      <div class="dest-card">
+        <div class="thumb img-placeholder">Image</div>
+        <div class="card-body">
+          <div class="city">Tübingen</div>
+          <div class="country">Germany</div>
+          <div class="desc">Student city with strong eco culture</div>
+          <div class="badge">Sustainability: 94/100</div>
+          <div class="meta-row">
+            <div class="meta-item"><div class="m-icon"></div> Transport: 93%</div>
+            <div class="meta-item"><div class="m-icon"></div> Crowd: 40</div>
+          </div>
+          <div class="meta-row">
+            <div class="meta-item"><div class="m-icon"></div> Best: Spring</div>
+            <div class="meta-item"><div class="m-icon"></div> Cost: 55</div>
+          </div>
+          <button class="explore-btn">Explore More →</button>
+        </div>
+      </div>
+      <div class="dest-card">
+        <div class="thumb img-placeholder">Image</div>
+        <div class="card-body">
+          <div class="city">Potsdam</div>
+          <div class="country">Germany</div>
+          <div class="desc">Green city with historic palaces</div>
+          <div class="badge">Sustainability: 93/100</div>
+          <div class="meta-row">
+            <div class="meta-item"><div class="m-icon"></div> Transport: 90%</div>
+            <div class="meta-item"><div class="m-icon"></div> Crowd: 60</div>
+          </div>
+          <div class="meta-row">
+            <div class="meta-item"><div class="m-icon"></div> Best: Spring</div>
+            <div class="meta-item"><div class="m-icon"></div> Cost: 70</div>
+          </div>
+          <button class="explore-btn">Explore More →</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- WEATHER -->
+    <div class="section-title" style="margin-top:20px;">
+      <div class="icon-sq"></div> Travel Weather Information
+    </div>
+    <div style="margin-bottom:6px;"><span class="label" style="color:#e74c3c;">⑩ Section: 3-column weather cards (temp, humidity, wind, condition)</span></div>
+    <div class="weather-grid" style="margin-bottom:24px;">
+      <div class="weather-card">
+        <div class="wc-title"><div class="w-icon"></div> Weather in Berlin</div>
+        <div class="weather-stat-grid">
+          <div class="weather-stat"><div class="ws-label">Temperature</div><div class="ws-value">23.4°C</div></div>
+          <div class="weather-stat"><div class="ws-label">Humidity</div><div class="ws-value">49%</div></div>
+          <div class="weather-stat"><div class="ws-label">Wind Speed</div><div class="ws-value">4.9 m/s</div></div>
+          <div class="weather-stat"><div class="ws-label">Condition</div><div class="ws-value" style="font-size:13px;">Clear</div></div>
+        </div>
+        <div class="weather-cond">Clear Sky</div>
+      </div>
+      <div class="weather-card">
+        <div class="wc-title"><div class="w-icon"></div> Weather in Frankfurt</div>
+        <div class="weather-stat-grid">
+          <div class="weather-stat"><div class="ws-label">Temperature</div><div class="ws-value">22.2°C</div></div>
+          <div class="weather-stat"><div class="ws-label">Humidity</div><div class="ws-value">76%</div></div>
+          <div class="weather-stat"><div class="ws-label">Wind Speed</div><div class="ws-value">3.6 m/s</div></div>
+          <div class="weather-stat"><div class="ws-label">Condition</div><div class="ws-value" style="font-size:13px;">Clear</div></div>
+        </div>
+        <div class="weather-cond">Clear Sky</div>
+      </div>
+      <div class="weather-card">
+        <div class="wc-title"><div class="w-icon"></div> Weather in Munich</div>
+        <div class="weather-stat-grid">
+          <div class="weather-stat"><div class="ws-label">Temperature</div><div class="ws-value">28.9°C</div></div>
+          <div class="weather-stat"><div class="ws-label">Humidity</div><div class="ws-value">36%</div></div>
+          <div class="weather-stat"><div class="ws-label">Wind Speed</div><div class="ws-value">2.2 m/s</div></div>
+          <div class="weather-stat"><div class="ws-label">Condition</div><div class="ws-value" style="font-size:13px;">Rain</div></div>
+        </div>
+        <div class="weather-cond">Moderate Rain</div>
+      </div>
+    </div>
+
+    <!-- CARBON + ROUTE TOOLS -->
+    <div class="section-title">
+      <div class="icon-sq"></div> Carbon Footprint Analyzer
+    </div>
+    <div style="margin-bottom:6px;"><span class="label" style="color:#e74c3c;">⑪ Carbon tool (left) + Eco-Route Planner (right)</span></div>
+    <div class="tool-grid">
+      <!-- Carbon Emissions Calculator -->
+      <div class="tool-card">
+        <div class="tc-title"><div class="t-icon"></div> Carbon Emissions Calculator</div>
+        <div class="transport-grid">
+          <div class="transport-btn">Flight</div>
+          <div class="transport-btn">Car</div>
+          <div class="transport-btn">Bus</div>
+          <div class="transport-btn">Train</div>
+        </div>
+        <div style="margin-bottom:10px;">
+          <div style="font-size:8px;color:#888;margin-bottom:3px;">Distance (km)</div>
+          <div style="border:1.5px solid #ccc;padding:5px 8px;font-size:9px;color:#999;background:#fafafa;border-radius:2px;">100</div>
+        </div>
+        <button class="calc-btn">Calculate Emissions</button>
+        <div class="result-row">
+          <div class="result-box">
+            <div class="rb-label">Carbon Emissions</div>
+            <div class="rb-value">18.40 kg</div>
+          </div>
+          <div class="result-box">
+            <div class="rb-label">Eco-Friendliness</div>
+            <div class="stars">
+              <div class="star"></div><div class="star"></div><div class="star"></div>
+            </div>
+          </div>
+        </div>
+        <div class="eco-msg">⊕ Excellent! This is an eco-friendly choice.</div>
+      </div>
+
+      <!-- Eco-Route Planner -->
+      <div class="tool-card">
+        <div class="tc-title"><div class="t-icon"></div> Eco-Route Planner</div>
+        <div style="margin-bottom:6px;font-size:10px;font-weight:700;">Route Calculator</div>
+        <div class="route-fields">
+          <div class="route-field">
+            <label>Start Latitude</label>
+            <div class="input-wf" style="display:block;border:1.5px solid #ccc;padding:6px 8px;font-size:9px;color:#999;background:#fafafa;border-radius:2px;">51.5074</div>
+          </div>
+          <div class="route-field">
+            <label>Start Longitude</label>
+            <div class="input-wf" style="display:block;border:1.5px solid #ccc;padding:6px 8px;font-size:9px;color:#999;background:#fafafa;border-radius:2px;">-0.1278</div>
+          </div>
+          <div class="route-field">
+            <label>End Latitude</label>
+            <div class="input-wf" style="display:block;border:1.5px solid #ccc;padding:6px 8px;font-size:9px;color:#999;background:#fafafa;border-radius:2px;">48.8566</div>
+          </div>
+          <div class="route-field">
+            <label>End Longitude</label>
+            <div class="input-wf" style="display:block;border:1.5px solid #ccc;padding:6px 8px;font-size:9px;color:#999;background:#fafafa;border-radius:2px;">2.3522</div>
+          </div>
+        </div>
+        <button class="calc-btn">Calculate Route</button>
+        <div style="margin-top:8px;"><span class="label" style="color:#e74c3c;">⑫ 4 coordinate inputs + Calculate Route button</span></div>
+      </div>
+    </div>
+
+    <!-- QUICK OVERVIEW -->
+    <div class="section-title" style="margin-top:20px;">
+      <div class="icon-sq"></div> Quick Overview
+    </div>
+    <div style="margin-bottom:6px;"><span class="label" style="color:#e74c3c;">⑬ 3-column stat cards (icon + number + label)</span></div>
+    <div class="overview-grid">
+      <div class="overview-card">
+        <div class="ov-icon"></div>
+        <div class="ov-number">8</div>
+        <div class="ov-label">Active Destinations</div>
+      </div>
+      <div class="overview-card">
+        <div class="ov-icon"></div>
+        <div class="ov-number">8</div>
+        <div class="ov-label">AI Recommendations</div>
+      </div>
+      <div class="overview-card">
+        <div class="ov-icon"></div>
+        <div class="ov-number" style="font-size:14px;">100%</div>
+        <div class="ov-label">Eco-Conscious</div>
+      </div>
+    </div>
+
+  </div><!-- /content -->
+</div><!-- /browser -->
+
+<!-- CALLOUT BAND -->
+<div class="callout-band">
+  <div class="callout"><strong>⑥ EcoRoute Banner</strong>Hatch-pattern bg represents full-bleed green gradient. Globe icon + large headline + sub-copy.</div>
+  <div class="callout"><strong>⑦ Search Bar</strong>Full-width text input + "Search Now" filled button. Sticky or scrolls with page.</div>
+  <div class="callout"><strong>⑧ AI Cards</strong>Thumbnail image + city/country + AI score badge + sustainability/cost meta + "View Details" CTA.</div>
+  <div class="callout"><strong>⑨ Eco Cards</strong>Same layout as AI cards but includes sustainability/100 score, transport %, crowd index, best season, cost.</div>
+  <div class="callout"><strong>⑩ Weather</strong>3 city panels. Each shows Temp, Humidity, Wind Speed, Condition in a 2×2 stat grid.</div>
+  <div class="callout"><strong>⑪ Carbon Calc</strong>4 transport mode toggles, distance input, calculate btn, result display with carbon kg + eco-friendliness stars.</div>
+  <div class="callout"><strong>⑫ Route Planner</strong>4 coordinate inputs (start/end lat/long) + calculate button. Results appear below.</div>
+  <div class="callout"><strong>⑬ Quick Overview</strong>3 summary stat cards at page bottom: active destinations, AI recs, eco-conscious %.</div>
+</div>
+
+<!-- LEGEND -->
+<div class="legend">
+  <div class="legend-item"><div class="leg-swatch" style="background:repeating-linear-gradient(135deg,#c8c4be 0,#c8c4be 4px,#bfbbb5 4px,#bfbbb5 8px);"></div> EcoRoute / bg area</div>
+  <div class="legend-item"><div class="leg-swatch" style="background:repeating-linear-gradient(135deg,#dedad4 0,#dedad4 4px,#cfcbc5 4px,#cfcbc5 8px);"></div> Image placeholder</div>
+  <div class="legend-item"><div class="leg-swatch" style="background:#fff;"></div> Card surface</div>
+  <div class="legend-item"><div class="leg-swatch" style="background:repeating-linear-gradient(45deg,#2a2a2a 0,#2a2a2a 2px,#444 2px,#444 5px);"></div> Primary action button</div>
+  <div class="legend-item"><div class="leg-swatch" style="border:1.5px dashed #aaa;"></div> Icon placeholder</div>
+  <div class="legend-item"><div style="width:20px;height:1px;border-top:1.5px dashed #e74c3c;"></div> Redline annotation</div>
+</div>
+
+</body>
+</html>

@@ -22,10 +22,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4.2.0
+        uses: actions/checkout@v4.2.1
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v4.0.3
         with:
           node-version: '20'
 
@@ -38,7 +38,7 @@ jobs:
         run: npm run build
 
       - name: Upload preview artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v4.3.4
         with:
           name: frontend-preview
           path: ./frontend/dist
@@ -48,10 +48,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v4.2.0
+        uses: actions/checkout@v4.2.1
 
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v4.0.3
         with:
           node-version: '20'
 
@@ -64,7 +64,7 @@ jobs:
         run: npm run build:gh-pages
 
       - name: Upload artifact for deployment
-        uses: actions/upload-pages-artifact@v2
+        uses: actions/upload-pages-artifact@v3
         with:
           path: ./frontend/dist
 

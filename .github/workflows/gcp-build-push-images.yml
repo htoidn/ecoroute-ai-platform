@@ -18,6 +18,7 @@ env:
   REPOSITORY: ${{ secrets.GCP_ARTIFACT_REPO }}
   PROJECT_ID: ${{ secrets.GCP_PROJECT_ID }}
   REGION: ${{ secrets.GCP_REGION }}
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build-and-push:
@@ -28,7 +29,7 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

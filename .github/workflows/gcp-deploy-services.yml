@@ -20,6 +20,7 @@ env:
   REGION: ${{ secrets.GCP_REGION }}
   SQL_CONNECTION: ${{ secrets.CLOUD_SQL_CONNECTION_NAME }}
   DATABASE_PASSWORD: ${{ secrets.DATABASE_PASSWORD }}
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   deploy-ai-service:
@@ -31,17 +32,22 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.0
 
       - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
+        id: auth
+        uses: google-github-actions/auth@v2.1.7
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account_email: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+        continue-on-error: true
 
       - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
+        if: steps.auth.outcome == 'success'
+        uses: google-github-actions/setup-gcloud@v2.1
 
       - name: Deploy AI Service to Cloud Run
+        if: steps.auth.outcome == 'success'
         run: |
           gcloud run deploy ecoroute-ai-service \
             --image ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/ai-service:latest \
@@ -54,6 +60,7 @@ jobs:
             --quiet
 
       - name: Get AI Service URL
+        if: steps.auth.outcome == 'success'
         run: |
           AI_SERVICE_URL=$(gcloud run services describe ecoroute-ai-service \
             --platform managed \
@@ -61,6 +68,10 @@ jobs:
             --format='value(status.url)')
           echo "AI_SERVICE_URL=$AI_SERVICE_URL" >> $GITHUB_ENV
           echo "AI Service deployed at: $AI_SERVICE_URL"
+
+      - name: Deployment Skipped
+        if: steps.auth.outcome == 'failure'
+        run: echo "⚠️ GCP credentials not configured. Skipping deployment. To enable GCP deployment, configure GCP_WORKLOAD_IDENTITY_PROVIDER and GCP_SERVICE_ACCOUNT_EMAIL secrets."
 
   deploy-backend:
     if: github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch'
@@ -71,20 +82,26 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.0
 
       - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
+        id: auth
+        uses: google-github-actions/auth@v2.1.7
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account_email: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+        continue-on-error: true
 
       - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
+        if: steps.auth.outcome == 'success'
+        uses: google-github-actions/setup-gcloud@v2.1
 
       - name: Wait for AI Service deployment
+        if: steps.auth.outcome == 'success'
         run: sleep 10
 
       - name: Get AI Service URL
+        if: steps.auth.outcome == 'success'
         run: |
           AI_SERVICE_URL=$(gcloud run services describe ecoroute-ai-service \
             --platform managed \
@@ -93,6 +110,7 @@ jobs:
           echo "AI_SERVICE_URL=$AI_SERVICE_URL" >> $GITHUB_ENV
 
       - name: Deploy Backend to Cloud Run
+        if: steps.auth.outcome == 'success'
         run: |
           gcloud run deploy ecoroute-backend \
             --image ${{ env.REGISTRY }}/${{ env.PROJECT_ID }}/${{ env.REPOSITORY }}/backend:latest \
@@ -106,6 +124,7 @@ jobs:
             --quiet
 
       - name: Get Backend URL
+        if: steps.auth.outcome == 'success'
         run: |
           BACKEND_URL=$(gcloud run services describe ecoroute-backend \
             --platform managed \
@@ -113,6 +132,10 @@ jobs:
             --format='value(status.url)')
           echo "BACKEND_URL=$BACKEND_URL" >> $GITHUB_ENV
           echo "Backend deployed at: $BACKEND_URL"
+
+      - name: Deployment Skipped
+        if: steps.auth.outcome == 'failure'
+        run: echo "⚠️ GCP credentials not configured. Skipping deployment. To enable GCP deployment, configure GCP_WORKLOAD_IDENTITY_PROVIDER and GCP_SERVICE_ACCOUNT_EMAIL secrets."
 
   update-frontend-config:
     needs: [deploy-ai-service, deploy-backend]
@@ -124,17 +147,22 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v4.2.0
 
       - name: Authenticate to Google Cloud
-        uses: google-github-actions/auth@v2
+        id: auth
+        uses: google-github-actions/auth@v2.1.7
         with:
-          credentials_json: ${{ secrets.GCP_SA_KEY }}
+          workload_identity_provider: ${{ secrets.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account_email: ${{ secrets.GCP_SERVICE_ACCOUNT_EMAIL }}
+        continue-on-error: true
 
       - name: Set up Cloud SDK
-        uses: google-github-actions/setup-gcloud@v2
+        if: steps.auth.outcome == 'success'
+        uses: google-github-actions/setup-gcloud@v2.1
 
       - name: Get Backend URL
+        if: steps.auth.outcome == 'success'
         run: |
           BACKEND_URL=$(gcloud run services describe ecoroute-backend \
             --platform managed \
@@ -143,16 +171,22 @@ jobs:
           echo "BACKEND_URL=$BACKEND_URL" >> $GITHUB_ENV
 
       - name: Update frontend .env.production
+        if: steps.auth.outcome == 'success'
         run: |
           echo "VITE_API_URL=${{ env.BACKEND_URL }}" > frontend/.env.production
 
       - name: Commit and push updated config
+        if: steps.auth.outcome == 'success'
         run: |
           git config user.name "GitHub Actions"
           git config user.email "actions@github.com"
           git add frontend/.env.production
           git commit -m "Auto-update backend URL after GCP deployment" || echo "No changes to commit"
           git push origin main || echo "Push failed (no changes)"
+
+      - name: Update Skipped
+        if: steps.auth.outcome == 'failure'
+        run: echo "⚠️ GCP credentials not configured. Skipping frontend config update."
 
   notify-deployment:
     needs: [deploy-ai-service, deploy-backend, update-frontend-config]

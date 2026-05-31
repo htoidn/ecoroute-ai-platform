@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Wireframe – Login Page</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Courier New', monospace;
+    background: #f0ede8;
+    color: #1a1a1a;
+    min-height: 100vh;
+  }
+
+  /* ── Annotation helpers ── */
+  .label {
+    font-size: 9px;
+    font-family: 'Courier New', monospace;
+    color: #e74c3c;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    font-weight: 700;
+  }
+  .note {
+    font-size: 9px;
+    color: #888;
+    font-style: italic;
+    margin-top: 2px;
+  }
+  .redline {
+    position: absolute;
+    background: #e74c3c;
+    opacity: .55;
+  }
+  .redline-h { height: 1px; left: 0; right: 0; }
+  .redline-v { width: 1px; top: 0; bottom: 0; }
+
+  /* ── Page header ── */
+  .page-header {
+    padding: 18px 32px 10px;
+    border-bottom: 1.5px dashed #bbb;
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+  .page-header h1 { font-size: 13px; font-weight: 700; letter-spacing: 1px; text-transform: uppercase; }
+  .page-header span { font-size: 10px; color: #777; }
+
+  /* ── Browser chrome ── */
+  .browser {
+    max-width: 900px;
+    margin: 24px auto;
+    border: 2px solid #1a1a1a;
+    border-radius: 6px;
+    overflow: hidden;
+    box-shadow: 4px 4px 0 #1a1a1a;
+  }
+  .browser-bar {
+    background: #d6d2cc;
+    border-bottom: 2px solid #1a1a1a;
+    padding: 8px 12px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .dot { width: 10px; height: 10px; border-radius: 50%; border: 1.5px solid #1a1a1a; background: #fff; display: inline-block; }
+  .url-bar { flex: 1; background: #fff; border: 1.5px solid #1a1a1a; border-radius: 3px; padding: 3px 10px; font-size: 10px; color: #555; }
+
+  /* ── Nav ── */
+  .nav {
+    background: #fff;
+    border-bottom: 2px solid #1a1a1a;
+    padding: 10px 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .nav-logo {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .nav-logo .circle { width: 14px; height: 14px; border-radius: 50%; border: 2px solid #1a1a1a; background: repeating-linear-gradient(45deg,#ccc 0,#ccc 2px,transparent 2px,transparent 5px); }
+  .nav-logo .logo-text { font-size: 13px; font-weight: 700; }
+  .nav-actions { display: flex; gap: 8px; align-items: center; }
+  .btn-wf {
+    border: 1.5px solid #1a1a1a;
+    padding: 4px 12px;
+    font-size: 10px;
+    font-family: 'Courier New', monospace;
+    background: #fff;
+    cursor: pointer;
+    border-radius: 2px;
+  }
+  .btn-wf.filled { background: #1a1a1a; color: #fff; }
+  .btn-wf.outline-green { border-color: #555; }
+
+  /* ── Page body (green bg area) ── */
+  .page-body {
+    position: relative;
+    background: repeating-linear-gradient(45deg,#e8e4df 0,#e8e4df 3px,#dedad4 3px,#dedad4 6px);
+    padding: 40px 20px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 520px;
+  }
+
+  /* bg annotation */
+  .bg-label {
+    position: absolute;
+    top: 12px; left: 14px;
+    font-size: 9px; color: #999; font-style: italic;
+  }
+
+  /* ── Login card ── */
+  .card {
+    background: #fff;
+    border: 2px solid #1a1a1a;
+    width: 340px;
+    padding: 28px 28px 24px;
+    position: relative;
+    box-shadow: 5px 5px 0 #bbb;
+  }
+
+  /* globe icon placeholder */
+  .icon-box {
+    width: 44px; height: 44px;
+    border: 2px dashed #aaa;
+    border-radius: 50%;
+    margin: 0 auto 12px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px; color: #aaa; text-align: center; line-height: 1.2;
+  }
+
+  .card-title { text-align: center; font-size: 20px; font-weight: 700; letter-spacing: 1px; }
+  .card-sub { text-align: center; font-size: 9px; color: #888; margin-top: 4px; margin-bottom: 16px; }
+
+  /* feature pills grid */
+  .feature-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+  .feature-pill {
+    border: 1.5px solid #ccc;
+    border-radius: 4px;
+    padding: 7px 10px;
+    display: flex; align-items: center; gap: 7px;
+  }
+  .feature-pill .f-icon { width: 18px; height: 18px; border: 1.5px dashed #aaa; border-radius: 50%; flex-shrink: 0; }
+  .feature-pill .f-text { font-size: 9px; color: #555; }
+
+  /* form fields */
+  .field { margin-bottom: 14px; }
+  .field-label {
+    font-size: 9px; font-weight: 700; letter-spacing: .8px; color: #555;
+    display: flex; align-items: center; gap: 5px; margin-bottom: 5px;
+  }
+  .field-label .f-icon-sm { width: 12px; height: 12px; border: 1.5px dashed #aaa; border-radius: 50%; }
+  .field-input {
+    border: 1.5px solid #ccc;
+    border-radius: 3px;
+    padding: 8px 10px;
+    width: 100%;
+    font-size: 10px;
+    color: #aaa;
+    display: flex; justify-content: space-between; align-items: center;
+    background: #fafafa;
+  }
+  .field-input .eye { width: 16px; height: 10px; border: 1.5px solid #ccc; border-radius: 8px; position: relative; }
+  .field-input .eye::after { content:''; position: absolute; width: 5px; height: 5px; border: 1px solid #ccc; border-radius: 50%; top: 50%; left: 50%; transform: translate(-50%,-50%); }
+
+  /* CTA button */
+  .cta-btn {
+    width: 100%;
+    background: repeating-linear-gradient(45deg,#2a2a2a 0,#2a2a2a 3px,#444 3px,#444 6px);
+    border: 2px solid #1a1a1a;
+    padding: 12px;
+    text-align: center;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    color: #fff;
+    margin-bottom: 14px;
+    cursor: pointer;
+  }
+  .cta-icon { display: inline-block; width: 12px; height: 12px; border: 1.5px dashed #fff; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+
+  /* signup link */
+  .signup-link { text-align: center; font-size: 9px; color: #888; }
+  .signup-link span { text-decoration: underline; color: #555; }
+
+  /* ── Annotation callouts ── */
+  .annotation-row {
+    max-width: 900px;
+    margin: 10px auto 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding: 0 12px 24px;
+  }
+  .callout {
+    background: #fff8e1;
+    border: 1px solid #f0c040;
+    border-left: 3px solid #f0c040;
+    padding: 6px 10px;
+    font-size: 9px;
+    color: #555;
+    border-radius: 2px;
+    min-width: 160px;
+    flex: 1;
+  }
+  .callout strong { display: block; font-size: 9px; color: #b8860b; text-transform: uppercase; margin-bottom: 2px; }
+
+  /* ── Legend ── */
+  .legend {
+    max-width: 900px;
+    margin: 0 auto 32px;
+    padding: 12px 16px;
+    background: #fff;
+    border: 1px dashed #bbb;
+    display: flex; gap: 24px; flex-wrap: wrap;
+  }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 9px; color: #666; }
+  .leg-swatch { width: 20px; height: 12px; border: 1px solid #bbb; }
+  .leg-swatch.hatch { background: repeating-linear-gradient(45deg,#e8e4df 0,#e8e4df 2px,#dedad4 2px,#dedad4 5px); }
+  .leg-swatch.solid { background: #fff; }
+  .leg-swatch.cta { background: repeating-linear-gradient(45deg,#2a2a2a 0,#2a2a2a 2px,#444 2px,#444 5px); }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <h1>Wireframe — Login Page</h1>
+  <span>EcoRoute AI · v1.0 · Page 1 of 2</span>
+  <span class="label" style="margin-left:auto;">⬤ Red = annotation  ⬤ Yellow = callout</span>
+</div>
+
+<!-- Browser Shell -->
+<div class="browser">
+  <div class="browser-bar">
+    <span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    <div class="url-bar">ecoroute.ai / login</div>
+  </div>
+
+  <!-- NAV -->
+  <div class="nav">
+    <div class="nav-logo">
+      <div class="circle"></div>
+      <span class="nav-logo" style="font-size:13px;font-weight:700;">EcoRoute AI</span>
+    </div>
+    <div class="nav-actions">
+      <div class="btn-wf outline-green">Dark Mode</div>
+      <div class="btn-wf">Login</div>
+      <div class="btn-wf filled">Register</div>
+    </div>
+  </div>
+  <!-- nav annotation -->
+  <div style="background:#fff;padding:3px 28px 6px;border-bottom:1px dashed #ddd;display:flex;gap:28px;">
+    <span class="label" style="color:#e74c3c;">① Logo + dot icon</span>
+    <span class="label" style="color:#e74c3c;margin-left:auto;">② Dark Mode toggle</span>
+    <span class="label" style="color:#e74c3c;">③ Login (outline btn)</span>
+    <span class="label" style="color:#e74c3c;">④ Register (filled btn)</span>
+  </div>
+
+  <!-- PAGE BODY -->
+  <div class="page-body">
+    <span class="bg-label">Background: Full-width green gradient / nature imagery</span>
+
+    <!-- LOGIN CARD -->
+    <div class="card">
+      <!-- ⑤ Globe icon -->
+      <div class="icon-box">GLOBE<br>ICON</div>
+      <div style="position:absolute;top:22px;right:12px;"><span class="label" style="color:#e74c3c;">⑤ Globe icon</span></div>
+
+      <div class="card-title">EcoRoute</div>
+      <div class="card-sub">Explore the world sustainably • AI-powered eco-tourism</div>
+
+      <!-- Feature grid -->
+      <div class="feature-grid">
+        <div class="feature-pill"><div class="f-icon"></div><div class="f-text">Eco-Friendly Routes</div></div>
+        <div class="feature-pill"><div class="f-icon"></div><div class="f-text">AI Recommendations</div></div>
+        <div class="feature-pill"><div class="f-icon"></div><div class="f-text">Sustainable Travel</div></div>
+        <div class="feature-pill"><div class="f-icon"></div><div class="f-text">Global Destinations</div></div>
+      </div>
+      <div style="text-align:center;margin-top:-12px;margin-bottom:14px;"><span class="label" style="color:#e74c3c;">⑥ 2×2 feature badge grid</span></div>
+
+      <!-- Username field -->
+      <div class="field">
+        <div class="field-label"><div class="f-icon-sm"></div> USERNAME</div>
+        <div class="field-input">
+          <span>Enter your username</span>
+          <div style="width:28px;height:14px;border:1px solid #ccc;border-radius:2px;font-size:7px;color:#aaa;display:flex;align-items:center;justify-content:center;">···</div>
+        </div>
+      </div>
+
+      <!-- Password field -->
+      <div class="field">
+        <div class="field-label"><div class="f-icon-sm"></div> PASSWORD</div>
+        <div class="field-input">
+          <span>Enter your password</span>
+          <div class="eye"></div>
+        </div>
+      </div>
+      <div style="margin-top:-8px;margin-bottom:12px;text-align:right;"><span class="label" style="color:#e74c3c;">⑦ Show/hide password toggle</span></div>
+
+      <!-- CTA -->
+      <div class="cta-btn"><span class="cta-icon"></span> START YOUR JOURNEY</div>
+      <div style="margin-top:-10px;margin-bottom:12px;"><span class="label" style="color:#e74c3c;">⑧ Primary CTA — full-width</span></div>
+
+      <!-- Signup link -->
+      <div class="signup-link">New to EcoRoute? <span>Create an account</span></div>
+      <div style="margin-top:4px;text-align:center;"><span class="label" style="color:#e74c3c;">⑨ Register link</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- CALLOUT ANNOTATIONS -->
+<div class="annotation-row">
+  <div class="callout"><strong>① Logo</strong>Circular dot + brand name "EcoRoute AI" in top-left. Clicking navigates to landing.</div>
+  <div class="callout"><strong>② Dark Mode</strong>Toggle button in navbar. Switches full-page palette.</div>
+  <div class="callout"><strong>③④ Nav CTAs</strong>Login = active page (outlined). Register = secondary action (filled).</div>
+  <div class="callout"><strong>⑤ Globe icon</strong>48px decorative icon. Reinforces eco/world-travel identity.</div>
+  <div class="callout"><strong>⑥ Feature grid</strong>4 feature pills (icon + label) arranged 2×2. Visual onboarding before login.</div>
+  <div class="callout"><strong>⑦ Password field</strong>Includes show/hide eye-icon toggle on the right.</div>
+  <div class="callout"><strong>⑧ CTA button</strong>Full card-width. Label: "START YOUR JOURNEY" with leaf icon prefix.</div>
+  <div class="callout"><strong>⑨ Sign-up prompt</strong>Below CTA: plain text + underlined "Create an account" link.</div>
+</div>
+
+<!-- LEGEND -->
+<div class="legend">
+  <div class="legend-item"><div class="leg-swatch hatch"></div> Background / non-interactive area</div>
+  <div class="legend-item"><div class="leg-swatch solid"></div> Card / interactive surface</div>
+  <div class="legend-item"><div class="leg-swatch cta"></div> Primary CTA button</div>
+  <div class="legend-item"><div class="leg-swatch" style="border:1.5px dashed #aaa;"></div> Icon placeholder</div>
+  <div class="legend-item"><div style="width:20px;height:1px;border-top:1.5px dashed #e74c3c;"></div> Redline annotation</div>
+</div>
+
+</body>
+</html>
